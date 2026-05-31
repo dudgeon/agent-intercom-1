@@ -7,11 +7,13 @@ Responsibilities:
 - Select the correct **skill** and invoke **MCP tools / MCP Apps**.
 - Own (or proxy) the **session** — the append-only log the device renders as threads.
 
-Two candidate homes for the harness (open question Q1):
-- **Claude Managed Agents** (hosted; session/harness/sandbox provided) — current MVP lean.
-- **Self-hosted Claude Agent SDK** on a home hub — more private, more ops.
+Harness home (ADR 0002): **Claude Managed Agents** for the MVP, behind an adapter so it can
+later swap to a **self-hosted Claude Agent SDK** on a home hub.
 
-Likely contents over time: agent/skill definitions, routing config, the harness adapter that
-the `apps/` client talks to, and prompt/skill assets.
+In the fleet topology (ADR 0005) the harness sits behind the **Session Gateway** (Cloudflare
+Worker + Durable Objects), which holds per-session state and relays UI-resource refs/events
+between the device fleet and the hosted capability MCP servers. This `agent/` workstream
+covers the harness adapter + the gateway's agent-driving logic, plus agent/skill definitions,
+routing config, and prompt/skill assets.
 
-_Empty until the Q1 ADR lands._
+_Empty until the Q4 ADR + Phase-1 gateway spike._

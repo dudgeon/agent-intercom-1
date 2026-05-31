@@ -9,16 +9,21 @@ decisions land. Checkboxes track reality.
 - [x] Open-question / decision framework (`docs/open-questions.md`)
 - [x] Workspace scaffold + workflow (`docs/workflow.md`, workstream dirs)
 - [x] **Resolve Q1 (harness) + Q2 (display) + Q3 (voice)** → ADRs 0002, 0003, 0004
+- [x] **Fleet topology + hosted backend** (multi-device) → ADR 0005 (resolves Q6; raises Q10/Q11)
 - [ ] Resolve Q4 (client tech) — leaning web/TS in a kiosk WebView (pairs with ADR 0003)
 - [ ] Gather Q9 industrial-design constraints from owner
 
-## Phase 1 — Prove the core experience (one device, one app)
-*Goal: speak → agent → a single MCP App renders on real hardware and responds to a soft button.*
+## Phase 1 — Prove the core experience (one device, one app, real backend)
+*Goal: speak → agent → a single MCP App renders on a device and responds to a soft button,
+served from the hosted backend.*
+- [ ] **Spike the brain⇄renderer relay** (ADR 0005 risk): gateway surfaces a `ui://` tool
+      result to an external renderer and round-trips `callServerTool`
+- [ ] Stand up the **Session Gateway** (Cloudflare Worker + Durable Object) — minimal
+- [ ] Build the **Timer** as a hosted remote MCP server + MCP App (`mcp-servers/`)
 - [ ] Stand up the client app as an MCP Apps host (per Q4) on dev hardware
-- [ ] Build the **Timer** MCP App (`mcp-servers/`) — stateful, self-retiring, live tick
-- [ ] Wire one agent backend (per Q1) end-to-end with voice in/out (per Q3)
-- [ ] **Hardware→iframe input bridge** spike (Q5): one soft button dismisses the timer
-- [ ] Decision: ADRs for voice pipeline (Q3), client tech (Q4), input bridge (Q5)
+- [ ] Wire the **harness** (Managed Agents, ADR 0002) end-to-end with voice in/out (ADR 0004)
+- [ ] **Hardware→iframe input bridge** spike (Q5), transport-agnostic: soft button dismisses timer
+- [ ] Decision: ADRs for client tech (Q4), input bridge (Q5)
 
 ## Phase 2 — The UI spectrum + multi-thread
 - [ ] **Weather** MCP App (timed persistence / lifecycle)

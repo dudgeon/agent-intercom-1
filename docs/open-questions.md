@@ -86,12 +86,16 @@ define hardware-input events.
 > This is the most *inventive* part of the project and a candidate to upstream as an MCP Apps
 > extension proposal.
 
-## Q6 — Multi-thread session model & where session state lives?
+## Q6 — Multi-thread session model & where session state lives? — ✅ RESOLVED → [ADR 0005](decisions/0005-fleet-topology-hosted-backend.md)
+
+> **Decided: server-authoritative. Each session is a Durable Object in the hosted gateway;
+> devices are renderers of that append-only log.** (Forced by the fleet topology — see Q10/Q11
+> for the multi-device consequences.)
 
 Side-by-side threads need a session store. Is the device the source of truth, or a view of a
 server-held session (cf. Managed Agents' append-only session log)?
 
-- **A. Server-authoritative session, device renders** (pairs with Q1-A). ⭐
+- **A. Server-authoritative session, device renders** (pairs with Q1-A). ⭐ **← chosen**
 - **B. Device-authoritative**, syncs out. Better offline; more to build.
 
 ## Q7 — What are the first 3 capabilities (MCP Apps) to build?
@@ -121,16 +125,45 @@ appliance or a gadget.
 
 ---
 
+## Q10 — Device identity, pairing & fleet management? *(new — from ADR 0005)*
+
+Multiple devices in different rooms means each needs an identity and a trust relationship with
+the gateway.
+
+- How does a new device **pair/enroll** (and get revoked)? QR/code pairing, per-device keys?
+- How does the gateway **authenticate** a device on every connection (mutual TLS, signed
+  tokens)?
+- How are devices **named/located** ("Kitchen", "Office") and updated (OTA) across the fleet?
+- Where do **user/account boundaries** sit — is the whole home one tenant?
+
+> Needs a written design before any always-on device ships; couples to privacy (Q8).
+
+## Q11 — Multi-device session behavior: affinity vs. roaming? *(new — from ADR 0005)*
+
+With sessions in the gateway and many renderers, we must define *which device shows what*.
+
+- **A. Device-affine:** a session belongs to the device it started on; other rooms don't see
+  it. Simplest. ⭐ *for MVP*
+- **B. Roaming/handoff:** "send the timer to the office," or pick up a thread on another device.
+- **C. Mirrored/ambient:** some state (a running timer) is visible on **all** devices; most
+  threads stay local.
+
+> Decide A for MVP; design the session/Durable-Object model so B/C remain possible (the
+> persistence in Q6 already lives server-side, which keeps the door open).
+
+---
+
 ## Decision dependency sketch
 
 ```
-Q1 (harness location) ──► Q6 (session authority)
-        │                       │
-        ▼                       ▼
-Q2 (display compute) ─► Q4 (client tech) ─► Q5 (hw→iframe bridge)
-        │                                         │
-        ▼                                         ▼
-Q9 (industrial design) ◄── Q3 (voice)        Q7 (first apps)
+Q1 (harness) ─► Q6 (session authority) ─► Q10 (device identity) ─► Q11 (affinity/roaming)
+   │ ✅            │ ✅                        │ new                   │ new
+   ▼               ▼                                                  
+Q2 (display) ─► Q4 (client tech) ─► Q5 (hw→iframe bridge, networked)
+   │ ✅                                  │
+   ▼                                     ▼
+Q9 (industrial design) ◄── Q3 (voice) ✅   Q7 (first apps)
 ```
 
-Answer **Q1 + Q2** first; almost everything else follows.
+✅ Q1, Q2, Q3, Q6 resolved (ADRs 0002–0005). Next leverage: **Q4** (unblocks code), then the
+relay/bridge spike, then **Q10/Q11** before fleet rollout.

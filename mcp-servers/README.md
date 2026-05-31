@@ -5,6 +5,11 @@ ships an **MCP App**: a `ui://` resource (bundled HTML/JS) declared on a tool vi
 `_meta.ui.resourceUri`, rendered by the host in a sandboxed iframe, communicating back over
 `postMessage`/JSON-RPC (`ontoolresult`, `callServerTool`, `updateModelContext`).
 
+**These run hosted in the cloud, shared by the whole device fleet** (ADR 0005) — not on each
+device. Default runtime: **remote MCP servers on Cloudflare Workers (`McpAgent` + Durable
+Objects**, streamable-HTTP transport, per-session state, hibernation). Adding a capability =
+deploying/upgrading one hosted server; every room gets it at once.
+
 Bonus: because these follow the open MCP Apps standard, each app also runs in **Claude
 desktop, ChatGPT, Goose, VS Code** — a free development/test surface before it ever touches
 the hardware.

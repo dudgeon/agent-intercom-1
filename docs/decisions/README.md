@@ -32,6 +32,8 @@ A / B / C and why not.
 | [0002](0002-harness-location.md) | Harness in cloud (Managed Agents) for MVP, self-host path | Accepted |
 | [0003](0003-display-compute.md) | Device display compute: Linux SBC + WebView | Accepted |
 | [0004](0004-voice-pipeline.md) | Voice: local wake word, cloud STT/TTS with local fallback | Accepted |
+| [0005](0005-fleet-topology-hosted-backend.md) | Fleet of thin clients + hosted backend (gateway + remote MCP) | Accepted |
 
 > Decisions still pending in [`../open-questions.md`](../open-questions.md): Q4 (client tech),
-> Q5 (input bridge), Q6 (session model), Q7 (first apps), Q8 (privacy), Q9 (industrial design).
+> Q5 (input bridge), Q7 (first apps), Q8 (privacy), Q9 (industrial design), Q10 (device
+> identity/fleet), Q11 (session affinity/roaming).
