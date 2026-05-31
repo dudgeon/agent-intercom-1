@@ -142,9 +142,15 @@ the gateway.
 - How does a new device **pair/enroll** (and get revoked)? QR/code pairing, per-device keys?
 - How does the gateway **authenticate** a device on every connection (mutual TLS, signed
   tokens)?
-- How are devices **named/located** ("Kitchen", "Office") and updated (OTA) across the fleet?
+- How are devices **named/located** ("Kitchen", "Office") across the fleet?
 - Where do **user/account boundaries** sit — is the whole home one tenant?
 
+> **OTA decided → [ADR 0008](decisions/0008-ota-strategy.md):** thin-shell + signed A/B
+> app-bundle updater with health-checked auto-rollback; Cloudflare (the gateway registry + R2)
+> is the control plane; Cloudflare Tunnel for remote access; full atomic-OS A/B deferred to a
+> graduation gate. **Still open here:** device identity/keys, pairing/enrollment, and
+> per-connection auth — which OTA signing reuses, so they must land together.
+>
 > Needs a written design before any always-on device ships; couples to privacy (Q8).
 
 ## Q11 — Multi-device session behavior: affinity vs. roaming? *(new — from ADR 0005)*
