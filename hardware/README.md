@@ -1,24 +1,28 @@
 # hardware/ — electronics & firmware
 
 Board selection, bill of materials, wiring, and firmware notes for the countertop unit.
+**Functional requirements live in [`requirements.md`](requirements.md)** — read that first.
 
-The device likely has **two compute roles** (open question Q2):
-- **Always-on voice/encoder front-end** — ESP32-S3 class: I²S mic(s) (INMP441 / ICS-43434),
-  I²S amp (MAX98357A) + speaker, rotary **scroll wheel** (encoder + push), **soft buttons**,
-  WS2812B LED ring for "listening" feedback. microWakeWord can run here on-device.
-- **Rich display/host** — a Linux SBC (Pi 5 / Radxa / mini-PC) driving the touchscreen and
-  running the MCP Apps host (a browser engine). May be merged with the front-end or kept
-  separate (hybrid).
+Compute & display (ADR 0003 + **0007**):
+- **Linux SBC + WebView host** — a Pi 5-class SBC runs the MCP Apps host (a browser engine),
+  drives a **~7.5" monochrome e-ink panel, non-touch** (800×480, SPI / SSD16xx-class) via
+  **partial refresh**, and owns audio + GPIO. Renders **on-device** (no server-side images).
+- **Always-on voice front-end** — optional hybrid ESP32-S3 (productization, not v1): I²S mic
+  array (INMP441 / ICS-43434), I²S amp (MAX98357A) + speaker; microWakeWord on-device.
 
-Reference boards under evaluation:
-- **MaTouch ESP32-S3 Rotary 2.1"** (480×480 round touchscreen + integrated encoder + button).
-- **VIEWE ESP32-C3 1.28" knob display** (smaller, round).
-- SBC + standalone touchscreen for the standards-true MCP Apps path.
+Firm input/feedback hardware (ADR 0007):
+- **Physical mic / wake-word switch + dedicated status LED** (state can't live on e-ink).
+- **Optional** soft buttons + **scroll wheel/encoder** (Q5 bridge — "fun, not locked").
+
+Reference parts under evaluation:
+- A well-documented **7.5" 800×480 e-ink panel** (Waveshare-class SSD driver) on the SBC's SPI.
+- Far-field I²S mic array + MAX98357A amp + small sealed speaker.
+- (Hybrid path only) ESP32-S3 front-end board.
 
 ## To capture here as decisions land
-- `BOM.md` — parts, links, prices, quantities.
-- `wiring.md` — pinouts, I²S/encoder/button mapping, power budget.
-- `firmware/` — ESPHome config or custom firmware for the front-end.
-- Power (USB-C PD vs. barrel), thermals, boot-time/instant-on notes.
+- `BOM.md` — parts, links, prices, quantities (key dependency for the screen cutout).
+- `wiring.md` — pinouts, SPI/e-ink, I²S, switch/LED/encoder/button mapping, power budget.
+- `firmware/` — e-ink driver + GPIO bridge; optional ESP32-S3 front-end config.
+- Power (USB-C), thermals, e-ink refresh strategy (partial vs. full).
 
-_Empty until Q2 ADR + Phase 1 hardware spike._
+_Requirements captured in `requirements.md`; BOM/wiring empty until the Phase 1 hardware spike._

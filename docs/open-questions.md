@@ -31,10 +31,13 @@ cost, offline behavior, and how thin the device is.
 
 > Decision also sets the **offline story**: what still works with no internet?
 
-## Q2 — Display/compute architecture of the device? *(drives hardware + UI)* — ✅ RESOLVED → [ADR 0003](decisions/0003-display-compute.md)
+## Q2 — Display/compute architecture of the device? *(drives hardware + UI)* — ✅ RESOLVED → [ADR 0003](decisions/0003-display-compute.md), panel refined by [ADR 0007](decisions/0007-display-eink.md)
 
-> **Decided: Linux SBC + touchscreen + WebView for the prototype (standards-true MCP Apps
-> host). Hybrid (ESP32-S3 front-end + SBC) kept as the productization path.**
+> **Decided: Linux SBC + WebView (standards-true MCP Apps host). Panel = ~7.5" monochrome
+> e-ink, NON-TOUCH (ADR 0007), rendered on-device at e-ink cadence (no server-side images;
+> timers refresh ~5s). Input is voice + a physical mic switch with status LED + optional
+> buttons/wheel. Hybrid (ESP32-S3 front-end + SBC) kept as the productization path.**
+> Functional spec: [`../hardware/requirements.md`](../hardware/requirements.md).
 
 Because **MCP Apps require a browser engine**, this is really "how do we render
 agent-delivered HTML UIs."
@@ -113,17 +116,21 @@ bridge (Q5) and persistence (Q6).
 
 ## Q8 — Privacy / "is it listening" posture & data boundaries?
 
-Wake-word-only-on-device by default; explicit mic-active LED; define what audio/text leaves
-the home and to whom. Tightly coupled to Q1 & Q3. Needs an explicit written policy before any
-always-on mic ships.
+Hardware affordance **decided** (ADR 0007): a **physical mic / wake-word switch with a
+dedicated status LED** (state can't live on the e-ink panel); proposed **no camera**. Still
+**open**: the written data-boundary policy — wake-word-only-on-device by default, and exactly
+what audio/text leaves the home and to whom. Tightly coupled to Q1 & Q3. Needs an explicit
+written policy before any always-on mic ships.
 
-## Q9 — Physical / industrial design constraints?
+## Q9 — Physical / industrial design constraints? — *functional spec captured; aesthetics owned by owner*
 
-Inputs needed from you to start Fusion 360 work: counter footprint budget, screen
-size/shape (round vs. rectangular — affects Q2 board choice), number of soft buttons (4?),
-scroll-wheel placement (side vs. front), speaker chamber, mic array geometry, power (USB-C
-vs. barrel), material/finish intent (kitchen-wipeable), and whether it should look like an
-appliance or a gadget.
+**Decided functional inputs** (intake + ADR 0007, see [`../hardware/requirements.md`](../hardware/requirements.md)):
+**angled wedge / clock-radio** stance; **~7.5" rectangular landscape e-ink, non-touch**;
+**physical mic switch + status LED** (firm); soft buttons + scroll wheel optional ("fun, not
+locked"). Owner authors the **aesthetic/material** design (assistant provides functional
+requirements only). **Still TBD** (functional): exact panel module, SBC + thermals, speaker
+chamber + mic-array geometry, power (USB-C assumed), camera (proposed none), button count /
+wheel placement.
 
 ---
 
@@ -167,5 +174,7 @@ Q2 (display) ─► Q4 (client tech) ─► Q5 (hw→iframe bridge, networked)
 Q9 (industrial design) ◄── Q3 (voice) ✅   Q7 (first apps)
 ```
 
-✅ Q1, Q2, Q3, Q6 resolved (ADRs 0002–0005). Next leverage: **Q4** (unblocks code), then the
-relay/bridge spike, then **Q10/Q11** before fleet rollout.
+✅ Q1, Q2 (+ e-ink panel), Q3, Q6 resolved (ADRs 0002–0007); relay/bridge **spiked & verified**
+(`spike/relay-timer/`). Next leverage: **Q4** (client tech, unblocks the real build), then
+**Q7** (more apps) and **Q10/Q11** before fleet rollout. Q8 (privacy policy) and Q9-functional
+details still need a written pass.

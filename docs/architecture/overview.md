@@ -6,22 +6,23 @@
 ## The shape: a fleet of thin renderers over a shared hosted backend
 
 Multiple countertop devices live around the home (ADR 0005). Each is a thin **MCP Apps
-renderer + voice I/O**. Everything shared — sessions, capabilities, and the UI bundles
-themselves — is **hosted centrally**. We deliberately split the normally-unified "MCP host"
-into a cloud **brain/harness** (ADR 0002) and an on-counter **renderer** (ADR 0003), with a
-**Session Gateway** between them.
+renderer + voice I/O** — a **~7.5" monochrome e-ink, non-touch** surface that renders the
+agent-delivered HTML **on-device** at e-ink cadence (ADR 0003 + 0007). Everything shared —
+sessions, capabilities, and the UI bundles themselves — is **hosted centrally**. We deliberately
+split the normally-unified "MCP host" into a cloud **brain/harness** (ADR 0006) and an
+on-counter **renderer** (ADR 0003), with a **Session Gateway** between them.
 
 ```
    ROOM A                         ROOM B                        ROOM C
 ┌───────────┐                 ┌───────────┐                ┌───────────┐
 │  DEVICE   │                 │  DEVICE   │                │  DEVICE   │   ← fleet of thin
-│ wake word │                 │ wake word │                │ wake word │     WebView hosts
-│ mic/spkr  │                 │ mic/spkr  │                │ mic/spkr  │     (ADR 0003)
-│ soft btns │                 │ soft btns │                │ soft btns │
-│ scrollwhl │                 │ scrollwhl │                │ scrollwhl │
+│ wake word │                 │ wake word │                │ wake word │     e-ink WebView
+│ mic/spkr  │                 │ mic/spkr  │                │ mic/spkr  │     hosts, non-touch
+│ mic switch│                 │ mic switch│                │ mic switch│     (ADR 0003+0007)
+│ +LED ·btns│                 │ +LED ·btns│                │ +LED ·btns│
 │ ┌───────┐ │                 │ ┌───────┐ │                │ ┌───────┐ │
-│ │MCP App│ │  renders only   │ │MCP App│ │                │ │MCP App│ │
-│ │iframe │ │                 │ │iframe │ │                │ │iframe │ │
+│ │MCP App│ │ 7.5" e-ink,     │ │MCP App│ │                │ │MCP App│ │
+│ │iframe │ │ renders on-dev  │ │iframe │ │                │ │iframe │ │
 │ └───────┘ │                 │ └───────┘ │                │ └───────┘ │
 └─────┬─────┘                 └─────┬─────┘                └─────┬─────┘
       │  streamable HTTP / WS (prompt up; UI-resource refs + events down)

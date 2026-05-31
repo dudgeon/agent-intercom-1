@@ -1,8 +1,13 @@
 # 0003 — Device display compute is a Linux SBC + WebView (standards-true MCP Apps host)
-- Status: Accepted
+- Status: Accepted (display *panel* refined by [ADR 0007](0007-display-eink.md))
 - Date: 2026-05-31
 - Deciders: Project owner
 - Resolves: open question Q2
+
+> **Refined by [ADR 0007](0007-display-eink.md):** the panel is a **~7.5" monochrome e-ink,
+> non-touch** display, and the SBC's WebView renders **on-device** at e-ink cadence (no
+> server-side image generation). The SBC + on-device WebView decision below **stands and is
+> reinforced**; "touchscreen" in the original text is superseded by "non-touch e-ink".
 
 ## Context
 MCP Apps (our UI standard, ADR-adjacent core bet) render as **sandboxed iframes** and
