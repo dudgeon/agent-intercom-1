@@ -53,3 +53,17 @@ adapt the device's display pipeline and the UI refresh contract to e-ink.
   aesthetic + low power; loses touch (accepted).
 - **Grayscale/color or large IT8951 panels**: deferred — slower refresh (color 15-30s) and
   higher cost; revisit if artifacts need more than 1-bit.
+
+## Panels evaluated (and why mono won on refresh)
+Color and refresh speed trade directly in e-ink — there is no fast color e-ink today. Confirmed
+mono after evaluating, in order of increasing refresh cost:
+- **Mono 1-bit (Waveshare 7.5", chosen):** ~1-2s full, **~0.3-0.5s partial** — the only class that
+  meets the ~5s tick with headroom.
+- **16-level grayscale (Waveshare 7.8"/10.3", IT8951):** still partial-refresh ~1s, no color flash —
+  the only "richer than 1-bit" option that keeps refresh fast. Held as the upgrade path.
+- **Tri-color b/w/red (Adafruit 6415, 7.5"):** rejected — slowest practical class; vendor advises
+  **refresh ≤ once per ~3 min** (red pigment ghosts). Also a bare panel needing a driver board.
+- **6-color Spectra (Pimoroni Inky Impression 7.3", 2025):** rejected for the live model — **~12-25s
+  full refresh, no partial update**; would force dropping live countdowns to static cards + audio.
+  (Nice board otherwise: 4 onboard buttons, Qw/ST, Pi 5 support — reconsider only if we ever choose
+  a calm, rarely-updating color surface over refresh.)
