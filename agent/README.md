@@ -18,4 +18,26 @@ In practice the gateway and harness largely **merge into one Worker/Durable Obje
 `agent/` workstream covers that loop + routing, agent/skill definitions, and prompt/skill
 assets. Capabilities stay as **MCP servers** (`mcp-servers/`), not logic baked into the harness.
 
-_Empty until the Q4 ADR + Phase-1 build (the relay is already proven in `spike/relay-timer/`)._
+## What's here (Cloudflare backend scaffold — verified locally)
+
+A deploy-ready Wrangler Worker that ports the proven relay onto the real platform:
+- `src/index.ts` — Worker entry; routes a device WebSocket to its per-session Durable Object.
+- `src/session-do.ts` — the **`Session` Durable Object** = gateway + harness: drives the
+  harness, calls the Timer over MCP, relays `ui://` apps, owns the **alarm-driven tick at
+  e-ink cadence (~5s, ADR 0007)**, proxies `callServerTool`, and persists thread state so a
+  reconnecting device re-syncs (server-authoritative session).
+- `src/harness.ts` — `MockHarness` behind the `Harness` interface (swap point for the real
+  Agent-SDK-on-Cloudflare loop).
+- Timer capability lives in [`../mcp-servers/timer/`](../mcp-servers/timer/), linked in-process
+  via `InMemoryTransport` (a transport swap from remote streamable-HTTP MCP).
+
+```bash
+cd agent && npm install
+npm run typecheck   # wrangler dry-run bundle
+npm run verify      # boots `wrangler dev` (workerd + DOs + alarms) and asserts the relay: 12/12
+npm run dev         # local dev server
+npm run deploy      # once CLOUDFLARE_API_TOKEN + account id are wired
+```
+
+Not yet done: split Timer into a standalone remote MCP Worker; real WebSocket auth/device
+pairing (Q10); the Agent-SDK harness; deploy (needs creds).

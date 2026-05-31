@@ -1,0 +1,12 @@
+{
+  "name": "@agent-intercom/timer-mcp",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Timer capability MCP server + ui:// MCP App (ADR 0005). Workers-compatible.",
+  "main": "src/server.ts",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^3.23.8"
+  }
+}

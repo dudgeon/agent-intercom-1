@@ -15,7 +15,10 @@ desktop, ChatGPT, Goose, VS Code** — a free development/test surface before it
 the hardware.
 
 Planned first servers (open question Q7), chosen to exercise the full UI spectrum:
-- **timer** — stateful, live-ticking, self-retiring; dismiss via soft button. *(first build)*
+- **timer** — ✅ built (`timer/`): `set_timer`/`dismiss_timer` + `ui://timer/countdown` MCP App
+  (e-ink, 1-bit). Verified end-to-end through the backend (`agent/`). Coarse-refresh on e-ink
+  (ADR 0007); dismiss via soft button → `callServerTool`. Still in-process to the Session DO;
+  splitting it into a standalone remote streamable-HTTP MCP Worker is the next step.
 - **weather** — fetch + timed-persistence card.
 - **recipe / artifact** — large scrollable HTML; scroll wheel + "next step" soft button.
 

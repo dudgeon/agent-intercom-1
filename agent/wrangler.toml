@@ -1,0 +1,16 @@
+name = "agent-intercom-backend"
+main = "src/index.ts"
+compatibility_date = "2025-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+# e-ink tick cadence (ADR 0007). Override to a small value for fast local verification.
+[vars]
+TICK_MS = "5000"
+
+[[durable_objects.bindings]]
+name = "SESSION"
+class_name = "Session"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Session"]
