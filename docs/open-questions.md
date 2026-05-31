@@ -9,7 +9,10 @@ Legend: ⭐ = my current lean.
 
 ---
 
-## Q1 — Where does the agent harness run? *(highest leverage)*
+## Q1 — Where does the agent harness run? *(highest leverage)* — ✅ RESOLVED → [ADR 0002](decisions/0002-harness-location.md)
+
+> **Decided: Start cloud (Claude Managed Agents) for the MVP, with a clean adapter so the
+> harness can later be swapped for a self-hosted Agent SDK on a home hub.**
 
 The "brain + harness" can live in three places, and this decision drives latency, privacy,
 cost, offline behavior, and how thin the device is.
@@ -26,7 +29,10 @@ cost, offline behavior, and how thin the device is.
 
 > Decision also sets the **offline story**: what still works with no internet?
 
-## Q2 — Display/compute architecture of the device? *(drives hardware + UI)*
+## Q2 — Display/compute architecture of the device? *(drives hardware + UI)* — ✅ RESOLVED → [ADR 0003](decisions/0003-display-compute.md)
+
+> **Decided: Linux SBC + touchscreen + WebView for the prototype (standards-true MCP Apps
+> host). Hybrid (ESP32-S3 front-end + SBC) kept as the productization path.**
 
 Because **MCP Apps require a browser engine**, this is really "how do we render
 agent-delivered HTML UIs."
@@ -41,7 +47,10 @@ agent-delivered HTML UIs."
 > Recommendation: **A for the prototype** (prove the standards-true experience), keep **C**
 > as the productization path once the UX is validated.
 
-## Q3 — Voice pipeline: local vs. cloud?
+## Q3 — Voice pipeline: local vs. cloud? — ✅ RESOLVED → [ADR 0004](decisions/0004-voice-pipeline.md)
+
+> **Decided: Hybrid — wake word always on-device; cloud STT/TTS when online with a local
+> fallback.**
 
 - **A. Local-first** (microWakeWord on-device, Whisper + Piper on hub). Private, no STT/TTS
   fees, works offline. *−* quality + setup effort, needs compute.

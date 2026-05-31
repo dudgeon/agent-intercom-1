@@ -8,7 +8,8 @@ decisions land. Checkboxes track reality.
 - [x] 2026 landscape research with sources (`docs/research/01-landscape.md`)
 - [x] Open-question / decision framework (`docs/open-questions.md`)
 - [x] Workspace scaffold + workflow (`docs/workflow.md`, workstream dirs)
-- [ ] **Resolve Q1 (harness location) + Q2 (display compute)** → first two ADRs
+- [x] **Resolve Q1 (harness) + Q2 (display) + Q3 (voice)** → ADRs 0002, 0003, 0004
+- [ ] Resolve Q4 (client tech) — leaning web/TS in a kiosk WebView (pairs with ADR 0003)
 - [ ] Gather Q9 industrial-design constraints from owner
 
 ## Phase 1 — Prove the core experience (one device, one app)
