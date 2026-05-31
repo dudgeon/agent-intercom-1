@@ -33,11 +33,17 @@ A deploy-ready Wrangler Worker that ports the proven relay onto the real platfor
 
 ```bash
 cd agent && npm install
-npm run typecheck   # wrangler dry-run bundle
-npm run verify      # boots `wrangler dev` (workerd + DOs + alarms) and asserts the relay: 12/12
-npm run dev         # local dev server
-npm run deploy      # once CLOUDFLARE_API_TOKEN + account id are wired
+npm run typecheck     # wrangler dry-run bundle
+npm run test:unit     # Tier-1 unit tests (vitest) — harness parsing, helpers
+npm run verify        # Tier-2 local e2e: wrangler dev (workerd+DOs+alarms) + simulated device
+npm test              # unit + e2e together
+npm run dev           # local dev server
+npm run deploy        # once CLOUDFLARE_API_TOKEN + account id are wired
 ```
+
+Testing strategy: **ADR 0009** (tiered, by area, local-first → cloud → fleet). AI sessions drive
+it via the `test-backend` / `test-mcp` / `test-client` / `promote` skills; CI mirrors it in
+`.github/workflows/`.
 
 Not yet done: split Timer into a standalone remote MCP Worker; real WebSocket auth/device
 pairing (Q10); the Agent-SDK harness; deploy (needs creds).

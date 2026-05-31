@@ -180,7 +180,8 @@ Q2 (display) ─► Q4 (client tech) ─► Q5 (hw→iframe bridge, networked)
 Q9 (industrial design) ◄── Q3 (voice) ✅   Q7 (first apps)
 ```
 
-✅ Q1, Q2 (+ e-ink panel), Q3, Q6 resolved (ADRs 0002–0007); relay/bridge **spiked & verified**
-(`spike/relay-timer/`). Next leverage: **Q4** (client tech, unblocks the real build), then
-**Q7** (more apps) and **Q10/Q11** before fleet rollout. Q8 (privacy policy) and Q9-functional
-details still need a written pass.
+✅ Q1, Q2 (+ e-ink panel), Q3, Q6 resolved (ADRs 0002–0007); OTA (0008) and testing/CI-CD (0009)
+decided; relay/bridge **spiked & verified** and the **backend is built + locally verified**
+(`agent/` + `mcp-servers/timer/`). Next leverage: **Q4** (client tech, unblocks the `apps/`
+host), then **Q7** (more apps) and **Q10/Q11** before fleet rollout. Q8 (privacy policy) and
+Q9-functional details still need a written pass.

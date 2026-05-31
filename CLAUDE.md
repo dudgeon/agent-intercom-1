@@ -6,8 +6,10 @@ to AI agents, built on open standards (**MCP** + **MCP Apps**). Read [`README.md
 and [`docs/vision.md`](docs/vision.md) first.
 
 ## Project phase
-**Inception.** No application code yet. We are *narrowing the option set* via an explicit
-decision process before committing to a stack. The deliverables so far are documents.
+**Inception → first code.** Most deliverables are still documents/decisions (ADRs 0001–0009),
+but the **backend is real and locally verified**: `agent/` (Cloudflare Worker + Session Durable
+Object = gateway+harness) + `mcp-servers/timer/` (Timer MCP + `ui://` app), proven end-to-end
+against `wrangler dev`. The device host (`apps/`) is still pending the Q4 ADR.
 
 ## How to work here (the dynamic workflow)
 See [`docs/workflow.md`](docs/workflow.md). The loop: **Frame → Decide → Spike → Learn**.
@@ -27,6 +29,14 @@ See [`docs/workflow.md`](docs/workflow.md). The loop: **Frame → Decide → Spi
 ## Workstream directories
 `apps/` (client host) · `agent/` (orchestration) · `mcp-servers/` (capabilities) ·
 `hardware/` (electronics) · `design/` (Fusion 360 + manufacturing assets).
+
+## Testing & CI (ADR 0009)
+Tiered, by functional area, **local-first** then promoted to cloud then fleet:
+- **Tier 1 unit** (`vitest`) + **Tier 2 local e2e** (`wrangler dev` + a simulated device) run with
+  no cloud creds. Backend: `cd agent && npm test`. Capability: `cd mcp-servers/timer && npm test`.
+- Drive it via the Skills `test-backend` · `test-mcp` · `test-client` · `promote`. CI mirrors it in
+  [`.github/workflows/`](.github/workflows/) with per-area path filters.
+- Hardware-in-the-loop is **manual** (the ✔ tests in `hardware/wiring.html`) and never gates CI.
 
 ## Branch
 Develop on `claude/voice-ai-home-assistant-ZPQaA`. Push there; open PRs as draft.

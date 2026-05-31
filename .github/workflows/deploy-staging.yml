@@ -1,0 +1,54 @@
+name: Deploy staging
+
+# Tier 3 (ADR 0009): deploy to Cloudflare staging on merge to main, then re-run the e2e suite
+# against the deployed Worker. No-ops cleanly until CLOUDFLARE_API_TOKEN (+ account id) is set as
+# a repo secret — so this file is safe to merge now.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'agent/**'
+      - 'mcp-servers/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check for deploy credentials
+        id: creds
+        run: |
+          if [ -n "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
+            echo "have=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "have=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::CLOUDFLARE_API_TOKEN not set — skipping staging deploy."
+          fi
+
+      - name: Install deps
+        if: steps.creds.outputs.have == 'true'
+        run: |
+          cd mcp-servers/timer && npm ci && cd -
+          cd agent && npm ci
+
+      - name: Deploy to staging
+        if: steps.creds.outputs.have == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: cd agent && npx wrangler deploy --env staging
+
+      # Tier-3 gate: run the SAME e2e contract against the deployed Worker.
+      # TODO: parameterize verify-backend.ts with STAGING_URL (it currently boots a local dev server).
+      - name: Staging e2e (smoke)
+        if: steps.creds.outputs.have == 'true'
+        env:
+          STAGING_URL: https://agent-intercom-backend-staging.workers.dev
+        run: |
+          echo "Health check against $STAGING_URL/health"
+          curl -fsS "$STAGING_URL/health" && echo " OK"

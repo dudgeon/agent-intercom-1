@@ -36,6 +36,7 @@ A / B / C and why not.
 | [0006](0006-harness-on-cloudflare.md) | Run the agent loop on Cloudflare, co-located with the gateway | Accepted |
 | [0007](0007-display-eink.md) | Display = ~7.5" monochrome e-ink, non-touch, rendered on-device | Accepted |
 | [0008](0008-ota-strategy.md) | OTA = thin-shell + signed A/B app updater, Cloudflare control plane | Accepted |
+| [0009](0009-testing-and-cicd.md) | Testing/CI-CD = tiered, by area, local-first → cloud → fleet | Accepted |
 
 > Decisions still pending in [`../open-questions.md`](../open-questions.md): Q4 (client tech),
 > Q5 (input bridge), Q7 (first apps), Q8 (privacy), Q9 (industrial-design functional details),

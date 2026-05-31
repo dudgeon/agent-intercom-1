@@ -14,3 +14,13 @@ class_name = "Session"
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["Session"]
+
+# Promotion target (ADR 0009 Tier 3). Deployed by CI once CLOUDFLARE_API_TOKEN is set:
+#   wrangler deploy --env staging
+[env.staging]
+name = "agent-intercom-backend-staging"
+vars = { TICK_MS = "5000" }
+
+[[env.staging.durable_objects.bindings]]
+name = "SESSION"
+class_name = "Session"

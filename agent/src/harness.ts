@@ -23,7 +23,8 @@ export class MockHarness implements Harness {
 }
 
 function parseDuration(text: string): number | null {
-  const m = text.match(/(\d+)\s*(second|sec|s|minute|min|m|hour|hr|h)\b/i);
+  // plural/abbrev forms first; bare single letters last (so "seconds" isn't eaten as "s")
+  const m = text.match(/(\d+)\s*(seconds?|secs?|minutes?|mins?|hours?|hrs?|s|m|h)\b/i);
   if (!m) return null;
   const n = parseInt(m[1], 10);
   const u = m[2].toLowerCase();
