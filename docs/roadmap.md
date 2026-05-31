@@ -16,8 +16,9 @@ decisions land. Checkboxes track reality.
 ## Phase 1 — Prove the core experience (one device, one app, real backend)
 *Goal: speak → agent → a single MCP App renders on a device and responds to a soft button,
 served from the hosted backend.*
-- [ ] **Spike the brain⇄renderer relay** (ADR 0005 risk): gateway surfaces a `ui://` tool
-      result to an external renderer and round-trips `callServerTool`
+- [x] **Spike the brain⇄renderer relay** (ADR 0005 risk): gateway surfaces a `ui://` tool
+      result to an external renderer and round-trips `callServerTool` → **verified** in
+      [`spike/relay-timer/`](../spike/relay-timer/) (`npm run verify`, 11/11 checks)
 - [ ] Stand up the **Session Gateway** (Cloudflare Worker + Durable Object) — minimal
 - [ ] Build the **Timer** as a hosted remote MCP server + MCP App (`mcp-servers/`)
 - [ ] Stand up the client app as an MCP Apps host (per Q4) on dev hardware
