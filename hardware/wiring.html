@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Agent Intercom — Prototype Wiring & Setup Guide (v0)</title>
+<style>
+  :root{
+    --ink:#15202b; --muted:#5b6b7a; --line:#d7dee6; --bg:#f6f8fa; --card:#fff;
+    --eink:#2563eb; --i2s:#059669; --sw:#d97706; --led:#7c3aed; --enc:#0891b2; --btn:#92400e;
+    --pwr3:#dc2626; --pwr5:#991b1b; --gnd:#64748b; --free:#cbd5e1;
+    --code:#0b1722; --codetext:#e6edf3;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 80px;}
+  header.hero{border-left:5px solid var(--eink);padding:6px 0 6px 18px;margin-bottom:8px;}
+  h1{font-size:30px;margin:0 0 4px;}
+  h2{font-size:23px;margin:42px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--line);}
+  h3{font-size:18px;margin:26px 0 8px;}
+  .sub{color:var(--muted);margin:0;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:16px 0;}
+  .note{border-left:4px solid var(--sw);background:#fffaf2;padding:12px 16px;border-radius:8px;margin:14px 0;}
+  .warn{border-left:4px solid var(--pwr3);background:#fff5f5;padding:12px 16px;border-radius:8px;margin:14px 0;}
+  .ok{border-left:4px solid var(--i2s);background:#f1fbf7;padding:12px 16px;border-radius:8px;margin:14px 0;}
+  code{background:#eef2f6;padding:1px 6px;border-radius:5px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13.5px;}
+  pre{background:var(--code);color:var(--codetext);padding:14px 16px;border-radius:10px;overflow:auto;font-size:13.5px;line-height:1.5;}
+  pre code{background:none;color:inherit;padding:0;}
+  table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14.5px;}
+  th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top;}
+  th{background:#eef2f6;}
+  .pin{display:inline-block;min-width:22px;text-align:center;border-radius:5px;color:#fff;font-weight:700;font-size:12px;padding:1px 5px;}
+  .legend span{display:inline-flex;align-items:center;gap:6px;margin:2px 14px 2px 0;font-size:13px;}
+  .sw-dot{width:13px;height:13px;border-radius:3px;display:inline-block;}
+  ul.check{list-style:none;padding-left:0;margin:8px 0;}
+  ul.check li{margin:4px 0;}
+  ul.check input{transform:scale(1.15);margin-right:9px;}
+  ul.check input:checked + span{color:var(--muted);text-decoration:line-through;}
+  .test{border:1px dashed var(--i2s);border-radius:10px;padding:8px 14px;margin:10px 0;background:#f7fdfb;}
+  .test b{color:var(--i2s);}
+  .step{counter-increment:step;}
+  .step h3::before{content:"Step " counter(step) " · ";color:var(--eink);}
+  .toc a{color:var(--eink);text-decoration:none;} .toc a:hover{text-decoration:underline;}
+  .meta{font-size:13px;color:var(--muted);}
+  svg{max-width:100%;height:auto;display:block;margin:6px auto;}
+  @media print{body{background:#fff} .card{break-inside:avoid} pre{white-space:pre-wrap}}
+</style>
+</head>
+<body>
+<div class="wrap" style="counter-reset:step">
+
+<header class="hero">
+  <h1>Agent Intercom — Prototype Wiring &amp; Setup</h1>
+  <p class="sub">v0 · single unit · Raspberry&nbsp;Pi&nbsp;5 + 7.5&Prime; mono e-ink + far-field mic + I²S speaker</p>
+</header>
+<p class="meta">Derived from <code>hardware/BOM.md</code> and <code>hardware/requirements.md</code> (ADR 0003 / 0007).
+Pin numbers are <b>physical</b> (board) pins; signal names use <b>BCM</b> GPIO numbering.
+Do all wiring with the unit <b>powered off and unplugged</b>.</p>
+
+<div class="warn">
+  <b>Two traps this layout designs around.</b>
+  <ol style="margin:6px 0 0">
+    <li><b>Pi 5 has no analog audio jack</b> → sound comes from an I²S amp (MAX98357A) + speaker.</li>
+    <li><b>The Waveshare e-ink driver defaults <code>PWR = GPIO18</code>, which is also the I²S bit-clock.</b>
+        We <b>tie the panel's PWR pin to 3V3</b> (or remap it) so GPIO18 is free for audio. If you skip
+        this, audio <i>or</i> the panel will mis-behave.</li>
+  </ol>
+</div>
+
+<div class="card toc">
+  <b>Contents</b>
+  <ol>
+    <li><a href="#sys">System overview</a></li>
+    <li><a href="#pins">GPIO pin map</a> (the single source of truth)</li>
+    <li><a href="#peri">Per-peripheral wiring</a></li>
+    <li><a href="#setup">Setup, step by step</a> — each with a checklist + a test</li>
+    <li><a href="#trouble">Troubleshooting</a></li>
+  </ol>
+</div>
+
+<!-- ====================== SYSTEM OVERVIEW ====================== -->
+<h2 id="sys">1 · System overview</h2>
+<p>The Pi 5 is the host. The display hangs off <b>SPI0</b>, the speaker off <b>I²S</b>, the mic array off
+<b>USB</b>, and the human controls (mic switch, status LED, optional encoder + buttons) off plain <b>GPIO</b>.</p>
+
+<svg viewBox="0 0 900 470" role="img" aria-label="System wiring block diagram">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#475569"/>
+    </marker>
+    <style>
+      .blk{fill:#fff;stroke:#334155;stroke-width:1.5;rx:10}
+      .lbl{font:600 14px sans-serif;fill:#15202b}
+      .sm{font:12px sans-serif;fill:#5b6b7a}
+      .bus{font:700 12px sans-serif}
+      .wire{fill:none;stroke-width:2.4;marker-end:url(#arrow)}
+    </style>
+  </defs>
+
+  <!-- Pi 5 center -->
+  <rect class="blk" x="350" y="185" width="200" height="100" rx="12"/>
+  <text class="lbl" x="450" y="225" text-anchor="middle">Raspberry Pi 5</text>
+  <text class="sm" x="450" y="245" text-anchor="middle">WebView host · 27W USB-C</text>
+  <text class="sm" x="450" y="262" text-anchor="middle">+ Active Cooler · microSD</text>
+
+  <!-- e-ink top -->
+  <rect class="blk" x="340" y="30" width="220" height="64" rx="10"/>
+  <text class="lbl" x="450" y="56" text-anchor="middle">7.5&Prime; e-ink HAT</text>
+  <text class="sm" x="450" y="76" text-anchor="middle">800×480 mono · non-touch</text>
+  <path class="wire" stroke="var(--eink)" d="M450,185 L450,98"/>
+  <text class="bus" fill="var(--eink)" x="462" y="145">SPI0 + RST/DC/BUSY</text>
+
+  <!-- speaker right -->
+  <rect class="blk" x="690" y="150" width="180" height="60" rx="10"/>
+  <text class="lbl" x="780" y="176" text-anchor="middle">MAX98357A amp</text>
+  <text class="sm" x="780" y="195" text-anchor="middle">→ 4Ω 3W speaker</text>
+  <path class="wire" stroke="var(--i2s)" d="M550,210 L690,185"/>
+  <text class="bus" fill="var(--i2s)" x="566" y="188">I²S</text>
+
+  <!-- mic left -->
+  <rect class="blk" x="30" y="150" width="180" height="60" rx="10"/>
+  <text class="lbl" x="120" y="176" text-anchor="middle">ReSpeaker 4-mic</text>
+  <text class="sm" x="120" y="195" text-anchor="middle">far-field · USB</text>
+  <path class="wire" stroke="#475569" d="M210,185 L350,210"/>
+  <text class="bus" fill="#475569" x="250" y="188">USB</text>
+
+  <!-- controls bottom -->
+  <rect class="blk" x="60" y="360" width="200" height="74" rx="10"/>
+  <text class="lbl" x="160" y="386" text-anchor="middle">Mic switch + LED</text>
+  <text class="sm" x="160" y="405" text-anchor="middle">GPIO23 in · RGB GPIO5/6/13</text>
+  <text class="sm" x="160" y="421" text-anchor="middle">privacy / "is it listening"</text>
+  <path class="wire" stroke="var(--sw)" d="M380,285 L200,360"/>
+  <text class="bus" fill="var(--sw)" x="250" y="330">GPIO</text>
+
+  <rect class="blk" x="640" y="360" width="220" height="74" rx="10"/>
+  <text class="lbl" x="750" y="386" text-anchor="middle">Encoder + 4 buttons</text>
+  <text class="sm" x="750" y="405" text-anchor="middle">optional · "fun, not locked"</text>
+  <text class="sm" x="750" y="421" text-anchor="middle">GPIO27/22/26 + 16/20/12/4</text>
+  <path class="wire" stroke="var(--enc)" d="M520,285 L700,360"/>
+  <text class="bus" fill="var(--enc)" x="560" y="330">GPIO</text>
+</svg>
+
+<!-- ====================== PIN MAP ====================== -->
+<h2 id="pins">2 · GPIO pin map — the single source of truth</h2>
+<p>The 40-pin header as you look down on the board, USB ports toward you. <b>Pin 1 is top-left.</b>
+Colored pins are used; gray are spare. Wire to <b>exactly</b> these and the software defaults below "just work."</p>
+
+<div class="legend card" style="padding:12px 16px">
+  <span><i class="sw-dot" style="background:var(--eink)"></i>e-ink (SPI)</span>
+  <span><i class="sw-dot" style="background:var(--i2s)"></i>I²S audio</span>
+  <span><i class="sw-dot" style="background:var(--sw)"></i>mic switch</span>
+  <span><i class="sw-dot" style="background:var(--led)"></i>status LED</span>
+  <span><i class="sw-dot" style="background:var(--enc)"></i>encoder (opt)</span>
+  <span><i class="sw-dot" style="background:var(--btn)"></i>buttons (opt)</span>
+  <span><i class="sw-dot" style="background:var(--pwr3)"></i>3V3</span>
+  <span><i class="sw-dot" style="background:var(--pwr5)"></i>5V</span>
+  <span><i class="sw-dot" style="background:var(--gnd)"></i>GND</span>
+  <span><i class="sw-dot" style="background:var(--free)"></i>spare</span>
+</div>
+
+<svg viewBox="0 0 760 540" role="img" aria-label="Raspberry Pi 5 40-pin header map">
+  <style>
+    .pn{font:700 11px ui-monospace,monospace;fill:#fff}
+    .fnL{font:12px ui-monospace,monospace;fill:#15202b}
+    .fnR{font:12px ui-monospace,monospace;fill:#15202b}
+    .hdr{fill:#1f2937;rx:10}
+  </style>
+  <rect class="hdr" x="300" y="14" width="160" height="512" rx="12"/>
+  <text x="380" y="500" text-anchor="middle" font-size="11" fill="#cbd5e1" font-family="monospace">Pi 5 · 40-pin GPIO</text>
+
+  <!-- Macro: each row 24px tall, starting y=24. Left col odd pins, right col even. -->
+  <!-- helper positions: left pin square x=330, right pin square x=406; left label anchor end x=322, right label start x=438 -->
+
+  <!-- We lay rows out explicitly. -->
+  <!-- Row 1: pin1 3V3 (eink), pin2 5V (amp) -->
+  <g transform="translate(0,24)">
+    <rect x="330" y="0" width="24" height="18" rx="4" fill="var(--pwr3)"/><text class="pn" x="342" y="13" text-anchor="middle">1</text>
+    <text class="fnL" x="322" y="13" text-anchor="end">3V3 → e-ink VCC + PWR</text>
+    <rect x="406" y="0" width="24" height="18" rx="4" fill="var(--pwr5)"/><text class="pn" x="418" y="13" text-anchor="middle">2</text>
+    <text class="fnR" x="438" y="13">5V → amp VIN</text>
+  </g>
+  <g transform="translate(0,48)">
+    <rect x="330" y="0" width="24" height="18" rx="4" fill="var(--free)"/><text class="pn" x="342" y="13" text-anchor="middle" fill="#1f2937">3</text>
+    <text class="fnL" x="322" y="13" text-anchor="end">GPIO2 SDA · spare</text>
+    <rect x="406" y="0" width="24" height="18" rx="4" fill="var(--pwr5)"/><text class="pn" x="418" y="13" text-anchor="middle">4</text>
+    <text class="fnR" x="438" y="13">5V</text>
+  </g>
+  <g transform="translate(0,72)">
+    <rect x="330" y="0" width="24" height="18" rx="4" fill="var(--free)"/><text class="pn" x="342" y="13" text-anchor="middle" fill="#1f2937">5</text>
+    <text class="fnL" x="322" y="13" text-anchor="end">GPIO3 SCL · spare</text>
+    <rect x="406" y="0" width="24" height="18" rx="4" fill="var(--gnd)"/><text class="pn" x="418" y="13" text-anchor="middle">6</text>
+    <text class="fnR" x="438" y="13">GND → e-ink GND</text>
+  </g>
+  <g transform="translate(0,96)">
+    <rect x="330" y="0" width="24" height="18" rx="4" fill="var(--btn)"/><text class="pn" x="342" y="13" text-anchor="middle">7</text>
+    <text class="fnL" x="322" y="13" text-anchor="end">GPIO4 · button 4</text>
+    <rect x="406" y="0" width="24" height="18" rx="4" fill="var(--free)"/><text class="pn" x="418" y="13" text-anchor="middle" fill="#1f2937">8</text>
+    <text class="fnR" x="438" y="13">GPIO14 TXD · spare</text>
+  </g>
+  <g transform="translate(0,120)">
+    <rect x="330" y="0" width="24" height="18" rx="4" fill="var(--gnd)"/><text class="pn" x="342" y="13" text-anchor="middle">9</text>
+    <text class="fnL" x="322" y="13" text-anchor="end">GND</text>
+    <rect x="406" y="0" width="24" height="18" rx="4" fill="var(--free)"/><text class="pn" x="418" y="13" text-anchor="middle" fill="#1f2937">10</text>
+    <text class="fnR" x="438" y="13">GPIO15 RXD · spare</text>
+  </g>
+  <g transform="translate(0,144)">
+    <rect x="330" y="0" width="24" height="18" rx="4" fill="var(--eink)"/><text class="pn" x="342" y="13" text-anchor="middle">11</text>
+    <text class="fnL" x="322" y="13" text-anchor="end">GPIO17 → e-ink RST</text>
+    <rect x="406" y="0" width="24" height="18" rx="4" fill="var(--i2s)"/><text class="pn" x="418" y="13" text-anchor="middle">12</text>
+    <text class="fnR" x="438" y="13">GPIO18 → amp BCLK</text>
+  </g>
+  <g transform="translate(0,168)">
+    <rect x="330" y="0" width="24" height="18" rx="4" fill="var(--enc)"/><text class="pn" x="342" y="13" text-anchor="middle">13</text>
+    <text class="fnL" x="322" y="13" text-anchor="end">GPIO27 · encoder A</text>
+    <rect x="406" y="0" width="24" height="18" rx="4" fill="var(--gnd)"/><text class="pn" x="418" y="13" text-anchor="middle">14</text>
+    <text class="fnR" x="438" y="13">GND → amp GND</text>
+  </g>
+  <g transform="translate(0,192)">
+    <rect x="330" y="0" width="24" height="18" rx="4" fill="var(--enc)"/><text class="pn" x="342" y="13" text-anchor="middle">15</text>
+    <text class="fnL" x="322" y="13" text-anchor="end">GPIO22 · encoder B</text>
+    <rect x="406" y="0" width="24" height="18" rx="4" fill="var(--sw)"/><text class="pn" x="418" y="13" text-anchor="middle">16</text>
+    <text class="fnR" x="438" y="13">GPIO23 → mic switch</text>
+  </g>
+  <g transform="translate(0,216)">
+    <rect x="330" y="0" width="24" height="18" rx="4" fill="var(--pwr3)"/><text class="pn" x="342" y="13" text-anchor="middle">17</text>
+    <text class="fnL" x="322" y="13" text-anchor="end">3V3</text>
+    <rect x="406" y="0" width="24" height="18" rx="4" fill="var(--eink)"/><text class="pn" x="418" y="13" text-anchor="middle">18</text>
+    <text class="fnR" x="438" y="13">GPIO24 → e-ink BUSY</text>
+  </g>
+  <g transform="translate(0,240)">
+    <rect x="330" y="0" width="24" height="18" rx="4" fill="var(--eink)"/><text class="pn" x="342" y="13" text-anchor="middle">19</text>
+    <text class="fnL" x="322" y="13" text-anchor="end">GPIO10 MOSI → e-ink DIN</text>
+    <rect x="406" y="0" width="24" height="18" rx="4" fill="var(--gnd)"/><text class="pn" x="418" y="13" text-anchor="middle">20</text>
+    <text class="fnR" x="438" y="13">GND → switch other leg</text>
+  </g>
+  <g transform="translate(0,264)">
+    <rect x="330" y="0" width="24" height="18" rx="4" fill="var(--free)"/><text class="pn" x="342" y="13" text-anchor="middle" fill="#1f2937">21</text>
+    <text class="fnL" x="322" y="13" text-anchor="end">GPIO9 MISO · spare</text>
+    <rect x="406" y="0" width="24" height="18" rx="4" fill="var(--eink)"/><text class="pn" x="418" y="13" text-anchor="middle">22</text>
+    <text class="fnR" x="438" y="13">GPIO25 → e-ink DC</text>
+  </g>
+  <g transform="translate(0,288)">
+    <rect x="330" y="0" width="24" height="18" rx="4" fill="var(--eink)"/><text class="pn" x="342" y="13" text-anchor="middle">23</text>
+    <text class="fnL" x="322" y="13" text-anchor="end">GPIO11 SCLK → e-ink CLK</text>
+    <rect x="406" y="0" width="24" height="18" rx="4" fill="var(--eink)"/><text class="pn" x="418" y="13" text-anchor="middle">24</text>
+    <text class="fnR" x="438" y="13">GPIO8 CE0 → e-ink CS</text>
+  </g>
+  <g transform="translate(0,312)">
+    <rect x="330" y="0" width="24" height="18" rx="4" fill="var(--gnd)"/><text class="pn" x="342" y="13" text-anchor="middle">25</text>
+    <text class="fnL" x="322" y="13" text-anchor="end">GND</text>
+    <rect x="406" y="0" width="24" height="18" rx="4" fill="var(--free)"/><text class="pn" x="418" y="13" text-anchor="middle" fill="#1f2937">26</text>
+    <text class="fnR" x="438" y="13">GPIO7 CE1 · spare</text>
+  </g>
+  <g transform="translate(0,336)">
+    <rect x="330" y="0" width="24" height="18" rx="4" fill="var(--free)"/><text class="pn" x="342" y="13" text-anchor="middle" fill="#1f2937">27</text>
+    <text class="fnL" x="322" y="13" text-anchor="end">ID_SD · reserved</text>
+    <rect x="406" y="0" width="24" height="18" rx="4" fill="var(--free)"/><text class="pn" x="418" y="13" text-anchor="middle" fill="#1f2937">28</text>
+    <text class="fnR" x="438" y="13">ID_SC · reserved</text>
+  </g>
+  <g transform="translate(0,360)">
+    <rect x="330" y="0" width="24" height="18" rx="4" fill="var(--led)"/><text class="pn" x="342" y="13" text-anchor="middle">29</text>
+    <text class="fnL" x="322" y="13" text-anchor="end">GPIO5 · LED red</text>
+    <rect x="406" y="0" width="24" height="18" rx="4" fill="var(--gnd)"/><text class="pn" x="418" y="13" text-anchor="middle">30</text>
+    <text class="fnR" x="438" y="13">GND</text>
+  </g>
+  <g transform="translate(0,384)">
+    <rect x="330" y="0" width="24" height="18" rx="4" fill="var(--led)"/><text class="pn" x="342" y="13" text-anchor="middle">31</text>
+    <text class="fnL" x="322" y="13" text-anchor="end">GPIO6 · LED green</text>
+    <rect x="406" y="0" width="24" height="18" rx="4" fill="var(--btn)"/><text class="pn" x="418" y="13" text-anchor="middle">32</text>
+    <text class="fnR" x="438" y="13">GPIO12 · button 3</text>
+  </g>
+  <g transform="translate(0,408)">
+    <rect x="330" y="0" width="24" height="18" rx="4" fill="var(--led)"/><text class="pn" x="342" y="13" text-anchor="middle">33</text>
+    <text class="fnL" x="322" y="13" text-anchor="end">GPIO13 · LED blue</text>
+    <rect x="406" y="0" width="24" height="18" rx="4" fill="var(--gnd)"/><text class="pn" x="418" y="13" text-anchor="middle">34</text>
+    <text class="fnR" x="438" y="13">GND → LED cathode</text>
+  </g>
+  <g transform="translate(0,432)">
+    <rect x="330" y="0" width="24" height="18" rx="4" fill="var(--i2s)"/><text class="pn" x="342" y="13" text-anchor="middle">35</text>
+    <text class="fnL" x="322" y="13" text-anchor="end">GPIO19 → amp LRC</text>
+    <rect x="406" y="0" width="24" height="18" rx="4" fill="var(--btn)"/><text class="pn" x="418" y="13" text-anchor="middle">36</text>
+    <text class="fnR" x="438" y="13">GPIO16 · button 1</text>
+  </g>
+  <g transform="translate(0,456)">
+    <rect x="330" y="0" width="24" height="18" rx="4" fill="var(--enc)"/><text class="pn" x="342" y="13" text-anchor="middle">37</text>
+    <text class="fnL" x="322" y="13" text-anchor="end">GPIO26 · encoder push</text>
+    <rect x="406" y="0" width="24" height="18" rx="4" fill="var(--btn)"/><text class="pn" x="418" y="13" text-anchor="middle">38</text>
+    <text class="fnR" x="438" y="13">GPIO20 · button 2</text>
+  </g>
+  <g transform="translate(0,480)">
+    <rect x="330" y="0" width="24" height="18" rx="4" fill="var(--gnd)"/><text class="pn" x="342" y="13" text-anchor="middle">39</text>
+    <text class="fnL" x="322" y="13" text-anchor="end">GND</text>
+    <rect x="406" y="0" width="24" height="18" rx="4" fill="var(--i2s)"/><text class="pn" x="418" y="13" text-anchor="middle">40</text>
+    <text class="fnR" x="438" y="13">GPIO21 → amp DIN</text>
+  </g>
+</svg>
+
+<div class="note"><b>HAT vs. stacking.</b> The e-ink ships as a HAT that sits on all 40 pins. To also reach the
+audio/switch/LED pins, use a <b>2×20 stacking header</b> (or wire the panel through its driver board with
+jumpers). Whichever you choose, the signal pins above don't change.</div>
+
+<!-- ====================== PER-PERIPHERAL ====================== -->
+<h2 id="peri">3 · Per-peripheral wiring</h2>
+
+<h3>7.5&Prime; e-ink (Waveshare, SPI)</h3>
+<table>
+  <tr><th>Panel pin</th><th>Pi signal</th><th>Pi pin</th></tr>
+  <tr><td>VCC</td><td>3V3</td><td>1</td></tr>
+  <tr><td>GND</td><td>GND</td><td>6</td></tr>
+  <tr><td>DIN</td><td>GPIO10 (MOSI)</td><td>19</td></tr>
+  <tr><td>CLK</td><td>GPIO11 (SCLK)</td><td>23</td></tr>
+  <tr><td>CS</td><td>GPIO8 (CE0)</td><td>24</td></tr>
+  <tr><td>DC</td><td>GPIO25</td><td>22</td></tr>
+  <tr><td>RST</td><td>GPIO17</td><td>11</td></tr>
+  <tr><td>BUSY</td><td>GPIO24</td><td>18</td></tr>
+  <tr><td><b>PWR</b></td><td><b>3V3 (tie high)</b> — frees GPIO18 for audio</td><td>17</td></tr>
+</table>
+
+<h3>MAX98357A I²S amp → speaker</h3>
+<table>
+  <tr><th>Amp pin</th><th>Pi signal</th><th>Pi pin</th></tr>
+  <tr><td>VIN</td><td>5V</td><td>2</td></tr>
+  <tr><td>GND</td><td>GND</td><td>14</td></tr>
+  <tr><td>BCLK</td><td>GPIO18</td><td>12</td></tr>
+  <tr><td>LRC</td><td>GPIO19</td><td>35</td></tr>
+  <tr><td>DIN</td><td>GPIO21</td><td>40</td></tr>
+  <tr><td>Speaker +/−</td><td colspan="2">to the 4Ω speaker terminals (leave SD/GAIN at defaults)</td></tr>
+</table>
+
+<h3>Mic switch · RGB status LED · (optional) encoder + buttons</h3>
+<table>
+  <tr><th>Part</th><th>Wiring</th><th>Pi pins</th></tr>
+  <tr><td>Mic/wake switch (latching)</td><td>one leg → GPIO23, other leg → GND (internal pull-up)</td><td>16, 20</td></tr>
+  <tr><td>RGB LED (common-cathode)</td><td>R/G/B via 220–330Ω → GPIO5/6/13; cathode → GND</td><td>29, 31, 33, 34</td></tr>
+  <tr><td>Rotary encoder EC11</td><td>A→GPIO27, B→GPIO22, push→GPIO26, common→GND</td><td>13, 15, 37</td></tr>
+  <tr><td>Soft buttons ×4</td><td>each → its GPIO + GND (internal pull-ups)</td><td>36, 38, 32, 7</td></tr>
+  <tr><td>Mic array</td><td>USB-A cable — no GPIO</td><td>—</td></tr>
+</table>
+
+<!-- ====================== SETUP ====================== -->
+<h2 id="setup">4 · Setup, step by step</h2>
+<p>Each step ends with a <span style="color:var(--i2s);font-weight:700">✔ test</span> that must pass before moving on.
+Run from another machine over SSH.</p>
+
+<div class="card step">
+  <h3>Flash the OS &amp; first boot</h3>
+  <p>Use Raspberry Pi Imager → <b>Raspberry Pi OS (64-bit), Bookworm</b>. In the gear/⚙ options set hostname
+  <code>intercom-kitchen</code>, enable SSH, and set Wi-Fi + user.</p>
+  <div class="warn">Pick <b>Bookworm</b>, not Trixie — there's a known regression where the MAX98357A I²S card
+  is detected but produces no sound on Trixie. Bookworm is the safe target for v0.</div>
+  <ul class="check">
+    <li><label><input type="checkbox"><span> microSD flashed, inserted, unit powered via the 27W PSU</span></label></li>
+    <li><label><input type="checkbox"><span> Active Cooler fitted</span></label></li>
+  </ul>
+  <div class="test"><b>✔ test</b> —
+    <pre><code>ssh pi@intercom-kitchen.local
+cat /etc/os-release   # expect: VERSION_CODENAME=bookworm
+uname -m              # expect: aarch64</code></pre>
+  </div>
+</div>
+
+<div class="card step">
+  <h3>Update &amp; enable SPI + I²S</h3>
+  <pre><code>sudo apt update &amp;&amp; sudo apt full-upgrade -y
+sudo raspi-config nonint do_spi 0          # enable SPI
+# enable the I²S amp by adding overlays:
+echo 'dtparam=spi=on'        | sudo tee -a /boot/firmware/config.txt
+echo 'dtoverlay=max98357a'   | sudo tee -a /boot/firmware/config.txt
+sudo reboot</code></pre>
+  <ul class="check">
+    <li><label><input type="checkbox"><span> SPI enabled</span></label></li>
+    <li><label><input type="checkbox"><span> <code>max98357a</code> overlay added</span></label></li>
+    <li><label><input type="checkbox"><span> rebooted</span></label></li>
+  </ul>
+  <div class="test"><b>✔ test</b> —
+    <pre><code>ls /dev/spidev0.*     # expect: /dev/spidev0.0  /dev/spidev0.1
+aplay -l              # expect a card listing MAX98357A / I2S</code></pre>
+  </div>
+</div>
+
+<div class="card step">
+  <h3>Wire &amp; test the e-ink panel</h3>
+  <p><b>Power off &amp; unplug.</b> Seat the HAT (or wire per the table, tying <b>PWR→3V3</b>). Power back on.</p>
+  <pre><code>sudo apt install -y git python3-pip python3-pil python3-numpy python3-spidev python3-gpiozero python3-lgpio
+git clone https://github.com/waveshareteam/e-Paper.git
+cd e-Paper/RaspberryPi_JetsonNano/python/examples
+python3 epd_7in5_V2_test.py     # use the variant matching your panel rev</code></pre>
+  <ul class="check">
+    <li><label><input type="checkbox"><span> PWR jumpered to 3V3 (or remapped in <code>epdconfig.py</code>)</span></label></li>
+    <li><label><input type="checkbox"><span> all 8 signal lines wired per the map</span></label></li>
+  </ul>
+  <div class="test"><b>✔ test</b> — the panel runs the demo: full-screen flashes, then test text/patterns/images.
+  A blank panel almost always = PWR/CS/contrast (see Troubleshooting).</div>
+</div>
+
+<div class="card step">
+  <h3>Wire &amp; test the speaker</h3>
+  <p>Wire the amp (5 lines) and the speaker to the amp's +/− terminals.</p>
+  <pre><code># make the I2S card the default, then:
+speaker-test -D default -c2 -twav -l1
+# or:
+aplay /usr/share/sounds/alsa/Front_Center.wav   # you should hear "Front, Center"</code></pre>
+  <ul class="check">
+    <li><label><input type="checkbox"><span> amp powered (VIN/GND), 3 I²S lines wired</span></label></li>
+    <li><label><input type="checkbox"><span> speaker connected</span></label></li>
+  </ul>
+  <div class="test"><b>✔ test</b> — you hear clear audio. No sound on Trixie? You're on the wrong OS (Step 1 warning).</div>
+</div>
+
+<div class="card step">
+  <h3>Test the far-field mic (USB)</h3>
+  <p>Plug the ReSpeaker array into a USB-A port.</p>
+  <pre><code>arecord -l            # note the card name, e.g. card 2: ArrayUAC10
+arecord -D plughw:CARD=ArrayUAC10,DEV=0 -d5 -f S16_LE -r16000 /tmp/t.wav
+aplay /tmp/t.wav      # play back what you said, across the room</code></pre>
+  <ul class="check"><li><label><input type="checkbox"><span> array enumerates; recording plays back intelligibly at ~2–3 m</span></label></li></ul>
+  <div class="test"><b>✔ test</b> — your across-room voice is clearly captured in the playback.</div>
+</div>
+
+<div class="card step">
+  <h3>Wire &amp; test the mic switch + status LED</h3>
+  <p>Switch: GPIO23↔GND. LED: R/G/B via resistors to GPIO5/6/13, cathode to GND.</p>
+  <pre><code>python3 - &lt;&lt;'PY'
+from gpiozero import Button, RGBLED
+from signal import pause
+sw  = Button(23, pull_up=True)            # pressed/closed = "muted"
+led = RGBLED(red=5, green=6, blue=13)     # PWM via lgpio on Pi 5
+def muted():  led.color=(1,0,0); print("MIC MUTED")
+def live():   led.color=(0,1,0); print("MIC LIVE")
+sw.when_pressed = muted; sw.when_released = live
+live() if not sw.is_pressed else muted()
+pause()
+PY</code></pre>
+  <ul class="check">
+    <li><label><input type="checkbox"><span> switch flips the printed state</span></label></li>
+    <li><label><input type="checkbox"><span> LED goes green (live) / red (muted)</span></label></li>
+  </ul>
+  <div class="test"><b>✔ test</b> — toggling the switch flips both the console line and the LED color.</div>
+  <div class="note"><b>Why a plain RGB LED, not a WS2812?</b> Addressable-LED libraries (rpi_ws281x) rely on PWM/DMA
+  timing that the Pi 5's new RP1 I/O controller doesn't support cleanly yet. A 3-GPIO RGB LED via
+  <code>gpiozero</code>/<code>lgpio</code> is rock-solid on Pi 5. (The mic array's own LED ring is a fine
+  secondary indicator if you want one.)</div>
+</div>
+
+<div class="card step">
+  <h3>(Optional) Wire &amp; test encoder + buttons</h3>
+  <pre><code>python3 - &lt;&lt;'PY'
+from gpiozero import RotaryEncoder, Button
+from signal import pause
+enc = RotaryEncoder(27, 22, max_steps=0); push = Button(26, pull_up=True)
+btns = {16:"B1",20:"B2",12:"B3",4:"B4"}
+enc.when_rotated = lambda: print("wheel", enc.steps)
+push.when_pressed = lambda: print("wheel click")
+for p,n in btns.items(): Button(p, pull_up=True).when_pressed = (lambda n=n: print("press", n))
+pause()
+PY</code></pre>
+  <ul class="check">
+    <li><label><input type="checkbox"><span> rotating prints increasing/decreasing steps</span></label></li>
+    <li><label><input type="checkbox"><span> each of the 4 buttons + wheel-click prints once</span></label></li>
+  </ul>
+  <div class="test"><b>✔ test</b> — every control emits exactly one clean event per actuation (no bounce storms).</div>
+</div>
+
+<div class="card step">
+  <h3>Integration smoke test</h3>
+  <p>One script that proves the pieces cooperate: <b>switch live → LED green + record 3s → play back</b>;
+  <b>switch muted → LED red, no capture</b>. This is the hardware contract the device host (<code>apps/</code>)
+  will later drive from the gateway.</p>
+  <pre><code>python3 - &lt;&lt;'PY'
+import subprocess
+from gpiozero import Button, RGBLED
+sw=Button(23,pull_up=True); led=RGBLED(5,6,13)
+if sw.is_pressed:
+    led.color=(1,0,0); print("muted — refusing to record")
+else:
+    led.color=(0,1,0); print("live — recording 3s…")
+    subprocess.run("arecord -d3 -f S16_LE -r16000 /tmp/s.wav",shell=True)
+    subprocess.run("aplay /tmp/s.wav",shell=True)
+PY</code></pre>
+  <ul class="check">
+    <li><label><input type="checkbox"><span> live: green LED, records, plays back</span></label></li>
+    <li><label><input type="checkbox"><span> muted: red LED, refuses to record</span></label></li>
+    <li><label><input type="checkbox"><span> e-ink demo still runs (no GPIO/SPI clash)</span></label></li>
+  </ul>
+  <div class="ok"><b>Hardware verified.</b> Next: the <code>apps/</code> host (pending the Q4 ADR) wires these
+  same pins to the gateway WebSocket — switch/LED → mic state, buttons/wheel → MCP App events, e-ink ←
+  rendered frames.</div>
+</div>
+
+<!-- ====================== TROUBLESHOOTING ====================== -->
+<h2 id="trouble">5 · Troubleshooting</h2>
+<table>
+  <tr><th>Symptom</th><th>Likely cause / fix</th></tr>
+  <tr><td>No <code>/dev/spidev*</code></td><td>SPI not enabled — re-run Step 2, confirm <code>dtparam=spi=on</code>, reboot.</td></tr>
+  <tr><td><code>aplay -l</code> shows no MAX98357A</td><td>Overlay missing or on Trixie. Confirm <code>dtoverlay=max98357a</code> in <code>/boot/firmware/config.txt</code>; reboot; if still absent, reflash <b>Bookworm</b>.</td></tr>
+  <tr><td>e-ink stays blank</td><td>PWR not tied high (GPIO18 stolen by audio), CS/DC swapped, or wrong demo for the panel rev. Re-check the e-ink table; verify PWR→3V3.</td></tr>
+  <tr><td>Audio <i>and</i> panel fight</td><td>Classic GPIO18 collision — you skipped tying e-ink PWR to 3V3. Fix the PWR jumper.</td></tr>
+  <tr><td>LED does nothing / errors</td><td>Don't use WS2812 on Pi 5; use the 3-GPIO RGB LED shown. Ensure resistors + cathode to GND.</td></tr>
+  <tr><td><code>gpiozero</code> "pin factory" error</td><td>Install <code>python3-lgpio</code>; on Pi 5 lgpio is the working backend.</td></tr>
+  <tr><td>Buttons trigger many times</td><td>Switch bounce — add <code>bounce_time=0.05</code> to the gpiozero <code>Button</code>.</td></tr>
+</table>
+
+<p class="meta" style="margin-top:30px">v0 · regenerate when the panel module or enclosure internals (Q9) are fixed.
+Pair with <code>hardware/BOM.md</code>. Signal pins here are authoritative for the firmware defaults.</p>
+
+</div>
+</body>
+</html>

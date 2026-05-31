@@ -22,6 +22,8 @@ Reference parts under evaluation:
 ## To capture here as decisions land
 - `BOM.md` — ✅ v0 core shopping list (Pi 5, 7.5" e-ink HAT, ReSpeaker USB array, I²S amp +
   speaker, mic switch + status LED). Parts, links, prices, gotchas.
+- `wiring.html` — ✅ rich wiring + setup guide: SVG system diagram + GPIO pin map, per-peripheral
+  tables, and step-by-step setup with a checklist + a pass/fail test per step. Open in a browser.
 - `wiring.md` — pinouts, SPI/e-ink, I²S, switch/LED/encoder/button mapping, power budget.
 - `firmware/` — e-ink driver + GPIO bridge; optional ESP32-S3 front-end config.
 - Power (USB-C), thermals, e-ink refresh strategy (partial vs. full).

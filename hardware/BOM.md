@@ -22,7 +22,7 @@ Shopping list for **one** countertop unit, derived from the functional requireme
 | ☐ | **MAX98357A I²S amp breakout** | Speaker output for chimes/TTS (the real-time channel e-ink can't be). | 1 | 6 | [Adafruit guide](https://learn.adafruit.com/adafruit-max98357-i2s-class-d-mono-amp/raspberry-pi-usage) |
 | ☐ | **Speaker, 4 Ω 3 W (≈40–50 mm)** | Pairs with the amp. | 1 | 4 | — |
 | ☐ | **Mic/wake switch — latching SPDT toggle or slide** | The firm physical mic control (ADR 0007 / Q8). Wired to a Pi GPIO. | 1 | 2 | — |
-| ☐ | **Status LED — WS2812 (or LED + 330 Ω)** | The "is it listening" indicator beside the switch (can't live on e-ink). WS2812 gives color states. | 1 | 2 | — |
+| ☐ | **Status LED — RGB LED (3× GPIO) + 3×220–330 Ω** | The "is it listening" indicator beside the switch (can't live on e-ink). **Plain RGB on 3 GPIO, not WS2812** — addressable-LED timing isn't reliable on the Pi 5's RP1 yet (see `wiring.html`). | 1 | 2 | — |
 | ☐ | **GPIO stacking header (2×20, extra-tall)** | Lets the amp/switch/LED/encoder tap GPIO while the e-ink HAT is seated. | 1 | 3 | — |
 | ☐ | **Jumper wires + small perfboard** | Wiring the amp/switch/LED/encoder. | 1 | 6 | — |
 | | | | | **~$235** | **core subtotal** |
