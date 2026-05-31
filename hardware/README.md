@@ -20,7 +20,8 @@ Reference parts under evaluation:
 - (Hybrid path only) ESP32-S3 front-end board.
 
 ## To capture here as decisions land
-- `BOM.md` — parts, links, prices, quantities (key dependency for the screen cutout).
+- `BOM.md` — ✅ v0 core shopping list (Pi 5, 7.5" e-ink HAT, ReSpeaker USB array, I²S amp +
+  speaker, mic switch + status LED). Parts, links, prices, gotchas.
 - `wiring.md` — pinouts, SPI/e-ink, I²S, switch/LED/encoder/button mapping, power budget.
 - `firmware/` — e-ink driver + GPIO bridge; optional ESP32-S3 front-end config.
 - Power (USB-C), thermals, e-ink refresh strategy (partial vs. full).
