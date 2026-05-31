@@ -1,8 +1,13 @@
 # 0002 — Agent harness runs in the cloud (Claude Managed Agents) for the MVP, with a self-host path
-- Status: Accepted
+- Status: **Superseded by [ADR 0006](0006-harness-on-cloudflare.md)**
 - Date: 2026-05-31
 - Deciders: Project owner
 - Resolves: open question Q1
+
+> **Superseded.** Once ADR 0005 placed the gateway + MCP servers on Cloudflare, the harness was
+> moved onto Cloudflare too (self-run, co-located) to optimize runtime latency and the dev
+> loop. See [ADR 0006](0006-harness-on-cloudflare.md). The original record is kept below.
+> Managed Agents remains a drop-in option behind the `Harness` interface.
 
 ## Context
 The agent "brain + harness" can run cloud-hosted, on a home hub, or fully on-device (Q1).

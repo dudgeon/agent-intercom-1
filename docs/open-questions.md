@@ -9,10 +9,12 @@ Legend: ⭐ = my current lean.
 
 ---
 
-## Q1 — Where does the agent harness run? *(highest leverage)* — ✅ RESOLVED → [ADR 0002](decisions/0002-harness-location.md)
+## Q1 — Where does the agent harness run? *(highest leverage)* — ✅ RESOLVED → [ADR 0006](decisions/0006-harness-on-cloudflare.md) (supersedes [0002](decisions/0002-harness-location.md))
 
-> **Decided: Start cloud (Claude Managed Agents) for the MVP, with a clean adapter so the
-> harness can later be swapped for a self-hosted Agent SDK on a home hub.**
+> **Decided: run the agent loop ourselves on Cloudflare (Agent SDK / CF Agents + Durable
+> Objects), co-located with the gateway + MCP servers — to optimize runtime latency and the
+> dev loop. Managed Agents stays a drop-in behind the `Harness` interface.** (Originally ADR
+> 0002 chose Managed Agents; revised once ADR 0005 put the backend on Cloudflare.)
 
 The "brain + harness" can live in three places, and this decision drives latency, privacy,
 cost, offline behavior, and how thin the device is.

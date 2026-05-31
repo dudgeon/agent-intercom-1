@@ -7,13 +7,15 @@ Responsibilities:
 - Select the correct **skill** and invoke **MCP tools / MCP Apps**.
 - Own (or proxy) the **session** — the append-only log the device renders as threads.
 
-Harness home (ADR 0002): **Claude Managed Agents** for the MVP, behind an adapter so it can
-later swap to a **self-hosted Claude Agent SDK** on a home hub.
+Harness home (ADR 0006, supersedes 0002): **run the agent loop ourselves on Cloudflare**
+(Claude Agent SDK / Cloudflare Agents SDK + Durable Objects), **co-located with the Session
+Gateway** (ADR 0005). This keeps tool round-trips intra-cloud and lets model tokens stream
+straight through to TTS — optimizing runtime latency and the dev loop. **Managed Agents** stays
+a drop-in behind the `Harness` interface (proven in the relay spike) for any future need
+(hosted multi-agent coordination, sandboxed code execution).
 
-In the fleet topology (ADR 0005) the harness sits behind the **Session Gateway** (Cloudflare
-Worker + Durable Objects), which holds per-session state and relays UI-resource refs/events
-between the device fleet and the hosted capability MCP servers. This `agent/` workstream
-covers the harness adapter + the gateway's agent-driving logic, plus agent/skill definitions,
-routing config, and prompt/skill assets.
+In practice the gateway and harness largely **merge into one Worker/Durable Object**. This
+`agent/` workstream covers that loop + routing, agent/skill definitions, and prompt/skill
+assets. Capabilities stay as **MCP servers** (`mcp-servers/`), not logic baked into the harness.
 
-_Empty until the Q4 ADR + Phase-1 gateway spike._
+_Empty until the Q4 ADR + Phase-1 build (the relay is already proven in `spike/relay-timer/`)._

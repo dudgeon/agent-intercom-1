@@ -40,11 +40,14 @@ into a cloud **brain/harness** (ADR 0002) and an on-counter **renderer** (ADR 00
                 ▼                                     ▼
    ┌─────────────────────────┐        ┌──────────────────────────────────────┐
    │ HARNESS (the "brain")   │  MCP   │ CAPABILITY MCP SERVERS (the "hands")   │
-   │ Claude Managed Agents   │◄──────►│ hosted remote MCP (CF McpAgent), each  │
-   │ routes prompt → agents/ │        │ serving tools + its ui:// MCP App HTML │
-   │ subagents + skills      │        │ timer · weather · recipe · home · …    │
-   │   (ADR 0002)            │        │ shared by ALL devices                  │
-   └─────────────────────────┘        └──────────────────────────────────────┘
+   │ self-run agent loop ON  │◄──────►│ hosted remote MCP (CF McpAgent), each  │
+   │ CLOUDFLARE (Agent SDK / │        │ serving tools + its ui:// MCP App HTML │
+   │ CF Agents), CO-LOCATED   │        │ timer · weather · recipe · home · …    │
+   │ with the gateway above  │        │ shared by ALL devices                  │
+   │   (ADR 0006)            │        └──────────────────────────────────────┘
+   └─────────────────────────┘
+   Co-location keeps tool round-trips intra-cloud and lets model tokens stream
+   straight through the gateway to TTS — no second cross-cloud leg per turn.
 ```
 
 Voice (ADR 0004): wake word runs **on each device**; STT/TTS go to cloud services when online,

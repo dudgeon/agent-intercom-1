@@ -55,7 +55,7 @@ scripts/verify-relay.ts   asserts the whole relay; exits non-zero on any failure
 |---|---|
 | `InMemoryTransport` MCP link | remote MCP over **streamable HTTP** (Cloudflare `McpAgent`) |
 | `SessionStore` (in-memory) | one **Durable Object** per session (ADR 0005) |
-| `MockHarness` | **Managed Agents** *or* **Agent SDK on Cloudflare** (see ADR 0002 — under review) |
+| `MockHarness` | self-run **Agent SDK / CF Agents loop on Cloudflare**, co-located (ADR 0006); Managed Agents swappable behind the interface |
 | `ws` server | Cloudflare **Worker** WebSocket / streamable HTTP |
 | headless/web renderer | the **device WebView** MCP Apps host |
 
