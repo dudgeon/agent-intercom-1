@@ -19,7 +19,11 @@ Planned first servers (open question Q7), chosen to exercise the full UI spectru
   (e-ink, 1-bit). Verified end-to-end through the backend (`agent/`). Coarse-refresh on e-ink
   (ADR 0007); dismiss via soft button → `callServerTool`. Still in-process to the Session DO;
   splitting it into a standalone remote streamable-HTTP MCP Worker is the next step.
-- **weather** — fetch + timed-persistence card.
+- **weather** — ✅ built (`weather/`): `get_weather`/`dismiss_weather` + `ui://weather/card` MCP App
+  (e-ink, 1-bit). Real **fetch** via Open-Meteo (no API key; the fetcher is injectable so tests stay
+  hermetic). Ambient **timed-persistence** card (Q6): `fresh` for a TTL, then the host can drive it
+  `stale` and finally retire it; Refresh/Dismiss soft buttons round-trip `callServerTool`. Unit +
+  MCP-protocol e2e (`test-mcp`). In-process for now — same standalone-remote-Worker split pending as Timer.
 - **recipe / artifact** — large scrollable HTML; scroll wheel + "next step" soft button.
 
 Later: home control, calendar, lists/notes, and bridges to existing servers (the owner
@@ -30,4 +34,4 @@ already has Notion, Google Calendar, Gmail, Drive MCP servers connected).
 - Co-locate the tool implementation and its `ui://` app bundle.
 - Document each app's **persistence policy** and which **hardware-input events** it consumes.
 
-_Empty until Q7 / first build._
+_Q7 in progress: **timer** + **weather** built; **recipe** next._

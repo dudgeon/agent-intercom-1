@@ -8,13 +8,14 @@ and [`docs/vision.md`](docs/vision.md) first.
 ## Project phase
 **Inception → first code.** Many deliverables are still documents/decisions (ADRs 0001–0010),
 but the **backend is real and locally verified**: `agent/` (Cloudflare Worker + Session Durable
-Object = gateway+harness) + `mcp-servers/timer/` (Timer MCP + `ui://` app), proven end-to-end
-against `wrangler dev`. The **device host (`apps/`) is now built and locally verified** too
-(ADR 0010: web/TS host = DOM-free core + thin DOM adapter; unit + simulated e2e). Cloud/fleet
-tiers still need Cloudflare creds; hardware is still pending.
+Object = gateway+harness) + capabilities `mcp-servers/timer/` and `mcp-servers/weather/` (MCP +
+`ui://` apps), proven end-to-end against `wrangler dev`. The **device host (`apps/`) is built and
+locally verified** too (ADR 0010: web/TS host = DOM-free core + thin DOM adapter; unit + simulated
+e2e). **Cloud staging is now deployed** (Cloudflare creds verified); fleet/OTA still gated on device
+identity (Q10); hardware still pending.
 
 **▶ New session? Read the handoff at the top of [`docs/roadmap.md`](docs/roadmap.md) first** — it
-says exactly what's built/verified, what's blocked (Cloudflare creds), and what to pick up next.
+says exactly what's built/verified, what's deployed, what's blocked, and what to pick up next.
 
 ## How to work here (the dynamic workflow)
 See [`docs/workflow.md`](docs/workflow.md). The loop: **Frame → Decide → Spike → Learn**.
@@ -44,7 +45,8 @@ Tiered, by functional area, **local-first** then promoted to cloud then fleet:
 - Hardware-in-the-loop is **manual** (the ✔ tests in `hardware/wiring.html`) and never gates CI.
 
 ## Branch
-Develop on `claude/voice-ai-home-assistant-ZPQaA`. Push there; open PRs as draft.
+PR #1 (inception + backend + Timer + device host) is **merged to `main`**. Branch new work off
+`main`; open PRs as draft.
 
 ## Industrial design
 Owner authors in Fusion 360. The assistant reviews via **STEP**, **STL/3MF**, **PNG
