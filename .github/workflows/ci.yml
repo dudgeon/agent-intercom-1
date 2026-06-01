@@ -60,11 +60,25 @@ jobs:
           node-version: 22
       - run: cd mcp-servers/timer && npm ci && npm test
 
-  # apps/ — placeholder until the host is scaffolded (Q4). Client unit + simulated e2e land here.
+  # apps/ — device host: unit (DOM-free core) + SIMULATED e2e (drives the core vs real wrangler dev)
   client:
     needs: changes
     if: ${{ needs.changes.outputs.client == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: echo "apps/ host not yet scaffolded (Q4); client unit + simulated-e2e will run here."
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Timer MCP deps (bundled by the gateway the e2e boots)
+        run: cd mcp-servers/timer && npm ci
+      - name: Install backend deps (the e2e boots ../agent wrangler dev)
+        run: cd agent && npm ci
+      - name: Install client deps
+        run: cd apps && npm ci
+      - name: Typecheck
+        run: cd apps && npm run typecheck
+      - name: Unit tests (session mirror + host/app bridge)
+        run: cd apps && npm run test:unit
+      - name: Simulated e2e (client core vs local gateway)
+        run: cd apps && npm run verify

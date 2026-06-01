@@ -1,0 +1,23 @@
+/* e-ink discipline (ADR 0007): 1-bit, high-contrast, no animation/transitions. */
+:root { --line: #000; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: #fff; color: #000;
+  font-family: Georgia, "Times New Roman", serif; }
+#app { display: flex; flex-direction: column; height: 100vh; }
+
+.bar { display: flex; align-items: center; gap: 12px; padding: 8px 12px;
+  border-bottom: 2px solid var(--line); }
+.bar .mic { border: 2px solid #000; padding: 4px 10px; font-weight: 700; cursor: pointer; background: #fff; }
+.bar .mic.muted { background: #000; color: #fff; }
+.bar input { flex: 1; font: inherit; padding: 6px 8px; border: 1px solid #000; }
+.bar button { font: inherit; padding: 6px 10px; border: 2px solid #000; background: #fff; cursor: pointer; }
+.bar .room { font-weight: 700; letter-spacing: .08em; text-transform: uppercase; font-size: 13px; }
+
+.threads { flex: 1; display: flex; gap: 10px; padding: 10px; overflow-x: auto; }
+.thread { min-width: 320px; max-width: 380px; border: 2px solid var(--line); display: flex; flex-direction: column; }
+.thread .prompt { padding: 6px 10px; border-bottom: 1px solid #000; font-style: italic; }
+.thread iframe { width: 100%; height: 300px; border: 0; background: #fff; }
+
+.softbar { display: flex; gap: 8px; padding: 8px 12px; border-top: 2px solid var(--line); min-height: 44px; }
+.softbar button { font: inherit; padding: 6px 14px; border: 2px solid #000; background: #fff; cursor: pointer; }
+.say { padding: 6px 12px; border-top: 1px dashed #000; min-height: 20px; font-size: 14px; }

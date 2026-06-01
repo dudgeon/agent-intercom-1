@@ -6,10 +6,12 @@ to AI agents, built on open standards (**MCP** + **MCP Apps**). Read [`README.md
 and [`docs/vision.md`](docs/vision.md) first.
 
 ## Project phase
-**Inception → first code.** Most deliverables are still documents/decisions (ADRs 0001–0009),
+**Inception → first code.** Many deliverables are still documents/decisions (ADRs 0001–0010),
 but the **backend is real and locally verified**: `agent/` (Cloudflare Worker + Session Durable
 Object = gateway+harness) + `mcp-servers/timer/` (Timer MCP + `ui://` app), proven end-to-end
-against `wrangler dev`. The device host (`apps/`) is still pending the Q4 ADR.
+against `wrangler dev`. The **device host (`apps/`) is now built and locally verified** too
+(ADR 0010: web/TS host = DOM-free core + thin DOM adapter; unit + simulated e2e). Cloud/fleet
+tiers still need Cloudflare creds; hardware is still pending.
 
 ## How to work here (the dynamic workflow)
 See [`docs/workflow.md`](docs/workflow.md). The loop: **Frame → Decide → Spike → Learn**.

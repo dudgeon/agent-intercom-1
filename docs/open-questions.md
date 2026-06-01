@@ -63,18 +63,20 @@ agent-delivered HTML UIs."
   *−* privacy, latency, network dependency.
 - **C. Hybrid:** local wake word always; cloud STT/TTS when online, local fallback. ⭐
 
-## Q4 — Client app technology?
+## Q4 — Client app technology? — ✅ RESOLVED → [ADR 0010](decisions/0010-client-tech.md)
 
-The host that renders sessions + MCP Apps and bridges hardware input.
+> **Decided: A — web/TypeScript host, Vite, framework-light**, running in the SBC kiosk WebView
+> *and* a desktop browser. Structured as a **DOM-free core** (transport + session mirror +
+> host↔app bridge) plus a thin DOM adapter, so the core is unit-tested and the simulated e2e runs
+> headless (no hardware/browser). The device is "a purpose-built kiosk browser that is also an MCP
+> Apps host." Built and verified in `apps/`.
 
+Original framing:
 - **A. Web stack in a WebView/Electron-like kiosk** (TS/React). *+* same code as MCP Apps,
-  huge ecosystem, easy to also run on a desktop for dev. ⭐
+  huge ecosystem, easy to also run on a desktop for dev. ⭐ *(chosen — vanilla TS, no Electron)*
 - **B. Flutter / native.** *+* perf, hardware integration. *−* second rendering path for the
   embedded MCP-App iframes anyway.
 - **C. Embedded GUI (LVGL).** Only viable in the ESP32-only world (couples to Q2-B).
-
-> If Q2 = A and Q4 = A, the device is essentially a **purpose-built kiosk browser** that is
-> *also* an MCP Apps host. That's a clean, demoable mental model.
 
 ## Q5 — How do hardware controls reach the MCP App UI? *(novel design work)*
 
@@ -175,13 +177,16 @@ Q1 (harness) ─► Q6 (session authority) ─► Q10 (device identity) ─► Q
    │ ✅            │ ✅                        │ new                   │ new
    ▼               ▼                                                  
 Q2 (display) ─► Q4 (client tech) ─► Q5 (hw→iframe bridge, networked)
-   │ ✅                                  │
-   ▼                                     ▼
+   │ ✅            │ ✅                  │ ~realized in the host
+   ▼               ▼                    ▼
 Q9 (industrial design) ◄── Q3 (voice) ✅   Q7 (first apps)
 ```
 
-✅ Q1, Q2 (+ e-ink panel), Q3, Q6 resolved (ADRs 0002–0007); OTA (0008) and testing/CI-CD (0009)
-decided; relay/bridge **spiked & verified** and the **backend is built + locally verified**
-(`agent/` + `mcp-servers/timer/`). Next leverage: **Q4** (client tech, unblocks the `apps/`
-host), then **Q7** (more apps) and **Q10/Q11** before fleet rollout. Q8 (privacy policy) and
-Q9-functional details still need a written pass.
+✅ Q1, Q2 (+ e-ink panel), Q3, Q6 resolved (ADRs 0002–0007); **Q4 (client tech) resolved (0010)**;
+OTA (0008) and testing/CI-CD (0009) decided; relay/bridge **spiked & verified**, the **backend is
+built + locally verified** (`agent/` + `mcp-servers/timer/`), and the **device host is built +
+locally verified** (`apps/`, unit + simulated e2e). The host already implements the **Q5 bridge**
+(host↔app `postMessage`: `init|tick|state|hw` ↔ `ready|softButtons|callTool`); a follow-up ADR can
+formalize the exact event vocabulary once hardware is in hand. Next leverage: **Q7** (more apps),
+then **Q10/Q11** before fleet rollout. Q8 (privacy policy) and Q9-functional details still need a
+written pass.
