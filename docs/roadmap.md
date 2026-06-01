@@ -12,32 +12,39 @@ decisions land. Checkboxes track reality.
   Unit + Tier-2 e2e against real `wrangler dev` (`cd agent && npm test`).
 - `mcp-servers/timer/` — Timer MCP + `ui://` countdown App. Unit + MCP-protocol e2e
   (`cd mcp-servers/timer && npm test`).
+- `mcp-servers/weather/` — Weather MCP + `ui://` ambient card (Q6 timed-persistence). Real Open-Meteo
+  fetch (injectable; tests hermetic). Unit + MCP-protocol e2e (`cd mcp-servers/weather && npm test`, 8/8).
 - `apps/` — device host (ADR 0010): DOM-free core (`GatewayClient`/`SessionStore`/`AppBridge`)
   + thin DOM adapter. Unit + **simulated** e2e drives prompt→render→tick→dismiss against the live
   gateway (`cd apps && npm test`). Realizes most of the Q5 input bridge.
 - Decisions: **ADRs 0001–0010**. CI mirrors the tiered tests per-area (`.github/workflows/ci.yml`).
 
-**Blocked, waiting on a fresh session — do this FIRST:**
-- Cloud tiers (Tier-3 deploy, ADR 0009; OTA, ADR 0008) need **Cloudflare creds**. The owner added
-  `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` to the environment, but **env vars are injected
-  at container start**, so they were *not* visible in the session that set them.
-- ➜ **First action in a fresh session:** `cd agent && npx wrangler whoami` to confirm the token +
-  account. Also confirm the env's **network policy allows egress to `api.cloudflare.com`**. Once
-  green, use the **`promote`** skill to walk local → staging → canary → fleet.
+**Cloud staging — LIVE (Gate 3, ADR 0009):**
+- Cloudflare creds **verified** (2026-06-01): `wrangler whoami` + `/user/tokens/verify` (active);
+  egress to `api.cloudflare.com` works.
+- **Deployed** `agent-intercom-backend-staging` →
+  `https://agent-intercom-backend-staging.dudgeon.workers.dev` (version `f89251f3`; confirmed via CF API).
+- ⚠️ **Runtime verify blocked from the web sandbox:** the env network policy allowlists
+  `api.cloudflare.com` but **not `*.workers.dev`**, so `/health` + the relay contract can't run
+  against the deployed Worker from here (`Host not in allowlist`, 403). ➜ Add the staging host to the
+  allowlist (or run the smoke from CI / outside) to finish Gate 3's functional check.
+- **Gate 4 (canary device → fleet) still blocked by Q10** (device identity/pairing) + no hardware.
 
 **Highest-leverage work that needs NO creds (pick up immediately):**
-1. **Weather MCP App** (`mcp-servers/`) — exercises timed persistence / lifecycle retirement (Q6).
+1. ✅ **Weather MCP App** — built (`mcp-servers/weather/`); timed persistence / lifecycle (Q6).
 2. **Recipe MCP App** — large scrollable artifact + scroll-wheel + "next step" (exercises the
    `hw` bridge end-to-end).
 3. Optionally split **Timer into a standalone remote MCP Worker** (today it's bundled by the
    backend e2e) — makes it faithful to ADR 0005.
 4. Formalize **Q5** (input-bridge event vocabulary) and **Q6** (ambient persistence) as ADRs.
+5. Add a **`verify:staging`** smoke (relay contract vs the deployed Worker) so Gate 3 has a real
+   functional check — needs the staging host in the network allowlist to run.
 
 **Owner decisions still open:** Q8 (privacy / data-boundary policy), Q9 (industrial-design
 functional details), Q10/Q11 (device identity, pairing, session affinity) before any fleet rollout.
 
-**Housekeeping:** PR **#1** (draft) tracks this branch but its description predates the backend +
-client host — refresh it. Develop on `claude/voice-ai-home-assistant-ZPQaA`; open PRs as draft.
+**Housekeeping:** PR **#1** is **merged to `main`** (inception + backend + Timer + device host). New
+work branches off `main`; open PRs as draft.
 
 ## Phase 0 — Inception *(now)*
 - [x] Vision + scenarios written (`docs/vision.md`)
@@ -69,7 +76,7 @@ served from the hosted backend.*
 - [x] Decision: ADR for client tech (Q4 → 0010). Q5 input-bridge **vocabulary** ADR still to write
 
 ## Phase 2 — The UI spectrum + multi-thread
-- [ ] **Weather** MCP App (timed persistence / lifecycle)
+- [x] **Weather** MCP App (timed persistence / lifecycle) — built (`mcp-servers/weather/`)
 - [ ] **Recipe** MCP App (large scrollable artifact + scroll wheel + "next step")
 - [ ] Side-by-side multi-thread session model (Q6)
 - [ ] Wake word always-on + "listening" LED affordance + privacy posture (Q8)
