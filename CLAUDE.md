@@ -13,6 +13,9 @@ against `wrangler dev`. The **device host (`apps/`) is now built and locally ver
 (ADR 0010: web/TS host = DOM-free core + thin DOM adapter; unit + simulated e2e). Cloud/fleet
 tiers still need Cloudflare creds; hardware is still pending.
 
+**▶ New session? Read the handoff at the top of [`docs/roadmap.md`](docs/roadmap.md) first** — it
+says exactly what's built/verified, what's blocked (Cloudflare creds), and what to pick up next.
+
 ## How to work here (the dynamic workflow)
 See [`docs/workflow.md`](docs/workflow.md). The loop: **Frame → Decide → Spike → Learn**.
 - Highest-leverage decisions live in [`docs/open-questions.md`](docs/open-questions.md).
