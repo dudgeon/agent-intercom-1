@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Timer</title>
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; }
+  body {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 12px; background: #0b0d12; color: #e8ecf1; user-select: none;
+  }
+  #label { font-size: 18px; color: #9aa4b2; letter-spacing: .04em; text-transform: uppercase; }
+  #time  { font-size: 88px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+  #ring  { width: 220px; height: 8px; border-radius: 99px; background: #1b212b; overflow: hidden; }
+  #bar   { height: 100%; width: 100%; background: linear-gradient(90deg,#5b9dff,#7af0c0); transition: width .25s linear; }
+  #status { font-size: 16px; min-height: 20px; color: #7af0c0; }
+  .done #time { color: #7af0c0; }
+  .dismissed #time { color: #5b6677; }
+  #hint { position: fixed; bottom: 10px; font-size: 12px; color: #5b6677; }
+</style>
+</head>
+<body>
+  <div id="label">Timer</div>
+  <div id="time">--:--</div>
+  <div id="ring"><div id="bar"></div></div>
+  <div id="status"></div>
+  <div id="hint">soft-button: Dismiss · scroll wheel: (no-op here)</div>
+
+<script>
+/*
+ * Agent Intercom — MCP App bridge (client side).
+ *
+ * This is the candidate "app SDK" referenced by open question Q5: a tiny lib an MCP App
+ * embeds so a host can drive it with HARDWARE events (soft buttons, scroll wheel) and so the
+ * app can declare soft-button LABELS and call back into its server tool (callServerTool).
+ *
+ * Transport-agnostic by design (ADR 0005): the host may be local (postMessage) or a remote
+ * gateway relaying over the network — the app only speaks this message contract.
+ */
+const HOST = "intercom-host";
+const APP  = "intercom-app";
+
+function send(type, payload) {
+  parent.postMessage({ source: APP, type, payload }, "*");
+}
+
+let timerId = null;
+let endTime = 0;
+let durationMs = 0;
+let raf = null;
+
+function fmt(ms) {
+  ms = Math.max(0, ms);
+  const s = Math.round(ms / 1000);
+  const m = Math.floor(s / 60);
+  return `${m}:${String(s % 60).padStart(2, "0")}`;
+}
+
+function paint(remainingMs) {
+  document.getElementById("time").textContent = fmt(remainingMs);
+  const pct = durationMs > 0 ? Math.max(0, Math.min(1, remainingMs / durationMs)) : 0;
+  document.getElementById("bar").style.width = (pct * 100).toFixed(1) + "%";
+}
+
+function tickLocal() {
+  if (!endTime) return;
+  paint(endTime - Date.now());
+  raf = requestAnimationFrame(tickLocal);
+}
+
+function init(state) {
+  timerId = state.timerId;
+  endTime = state.endTime;
+  durationMs = state.durationSeconds * 1000;
+  document.getElementById("label").textContent = state.label || "Timer";
+  document.body.className = "";
+  document.getElementById("status").textContent = "";
+  cancelAnimationFrame(raf);
+  tickLocal();
+  // Declare the soft-button labels the host should paint on the hardware buttons.
+  send("softButtons", { labels: ["Dismiss"] });
+  send("ready", {});
+}
+
+function onDone() {
+  cancelAnimationFrame(raf);
+  paint(0);
+  document.body.className = "done";
+  document.getElementById("status").textContent = "Done — press Dismiss";
+}
+
+function onDismissed() {
+  cancelAnimationFrame(raf);
+  document.body.className = "dismissed";
+  document.getElementById("status").textContent = "Dismissed";
+}
+
+function dismiss() {
+  // The callServerTool equivalent: ask our capability server to cancel the timer.
+  send("callTool", { tool: "dismiss_timer", args: { timerId } });
+}
+
+window.addEventListener("message", (e) => {
+  const m = e.data || {};
+  if (m.source !== HOST) return;
+  switch (m.type) {
+    case "init":  init(m.payload.state); break;
+    case "tick":  paint(m.payload.remainingMs); break;        // host can also drive ticks
+    case "state":
+      if (m.payload.status === "done") onDone();
+      else if (m.payload.status === "dismissed") onDismissed();
+      break;
+    case "hw": {                                              // hardware event injected by host
+      const { control, id, delta } = m.payload;
+      if (control === "softbutton" && id === "Dismiss") dismiss();
+      if (control === "scroll") send("notify", { text: `scrolled ${delta}` });
+      break;
+    }
+  }
+});
+
+send("ready", {});
+</script>
+</body>
+</html>

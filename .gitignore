@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+*.local
+
+# Build output
+dist/
+build/
+out/
+.cache/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Fusion 360 lock/temp files (commit exports under design/, not these)
+*.lck
+~$*
+
+# Logs
+*.log
+
+# Cloudflare / wrangler build artifacts
+.wrangler/
+.dryrun/
+*.log

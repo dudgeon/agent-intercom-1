@@ -1,0 +1,22 @@
+{
+  "name": "agent-intercom-client",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Device host: MCP Apps renderer + voice/hardware bridge (ADR 0003/0007/0010).",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "test:unit": "vitest run",
+    "verify": "tsx scripts/verify-client.ts",
+    "test": "npm run test:unit && npm run verify"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vite": "^5.4.0",
+    "vitest": "^2.1.0"
+  }
+}

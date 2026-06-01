@@ -1,0 +1,84 @@
+name: CI
+
+# Tiers 1 (unit) + 2 (local e2e) per functional area (ADR 0009). No cloud creds needed.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      mcp: ${{ steps.filter.outputs.mcp }}
+      client: ${{ steps.filter.outputs.client }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'agent/**'
+              - 'mcp-servers/**'   # agent's local e2e bundles the Timer capability
+            mcp:
+              - 'mcp-servers/**'
+            client:
+              - 'apps/**'
+
+  # agent/ — unit (harness) + Tier-2 local e2e against real wrangler dev (workerd + DO + alarms)
+  backend:
+    needs: changes
+    if: ${{ needs.changes.outputs.backend == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Timer MCP deps (bundled by the backend e2e)
+        run: cd mcp-servers/timer && npm ci
+      - name: Install backend deps
+        run: cd agent && npm ci
+      - name: Typecheck (wrangler dry-run bundle)
+        run: cd agent && npm run typecheck
+      - name: Unit tests
+        run: cd agent && npm run test:unit
+      - name: Local e2e (wrangler dev + Durable Objects + alarms)
+        run: cd agent && npm run verify
+
+  # mcp-servers/ — unit + MCP-protocol e2e (in-memory client)
+  mcp:
+    needs: changes
+    if: ${{ needs.changes.outputs.mcp == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: cd mcp-servers/timer && npm ci && npm test
+
+  # apps/ — device host: unit (DOM-free core) + SIMULATED e2e (drives the core vs real wrangler dev)
+  client:
+    needs: changes
+    if: ${{ needs.changes.outputs.client == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Timer MCP deps (bundled by the gateway the e2e boots)
+        run: cd mcp-servers/timer && npm ci
+      - name: Install backend deps (the e2e boots ../agent wrangler dev)
+        run: cd agent && npm ci
+      - name: Install client deps
+        run: cd apps && npm ci
+      - name: Typecheck
+        run: cd apps && npm run typecheck
+      - name: Unit tests (session mirror + host/app bridge)
+        run: cd apps && npm run test:unit
+      - name: Simulated e2e (client core vs local gateway)
+        run: cd apps && npm run verify

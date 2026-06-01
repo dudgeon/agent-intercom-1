@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Agent Intercom — device renderer (demo)</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; font-family: system-ui, sans-serif; background: #06070a; color: #e8ecf1; }
+  header { padding: 10px 16px; background: #0e1218; display: flex; gap: 12px; align-items: center; }
+  header input { flex: 1; padding: 8px 10px; border-radius: 8px; border: 1px solid #222a36; background: #0b0f15; color: #e8ecf1; }
+  header button { padding: 8px 14px; border-radius: 8px; border: 0; background: #2f6fed; color: #fff; cursor: pointer; }
+  #threads { display: flex; gap: 14px; padding: 16px; overflow-x: auto; align-items: flex-start; }
+  .thread { width: 320px; flex: 0 0 auto; background: #0e1218; border: 1px solid #1b212b; border-radius: 14px; overflow: hidden; }
+  .prompt { padding: 10px 12px; font-size: 13px; color: #9aa4b2; border-bottom: 1px solid #1b212b; }
+  iframe { width: 100%; height: 300px; border: 0; display: block; background: #0b0d12; }
+  .softbtns { display: flex; gap: 8px; padding: 10px; border-top: 1px solid #1b212b; }
+  .softbtns button { flex: 1; padding: 10px; border: 0; border-radius: 8px; background: #1b2230; color: #cdd6e2; cursor: pointer; }
+  .wheel { padding: 8px 10px; font-size: 12px; color: #5b6677; border-top: 1px solid #1b212b; display: flex; gap: 8px; align-items: center; }
+  #say { padding: 8px 16px; font-size: 13px; color: #7af0c0; min-height: 18px; }
+</style>
+</head>
+<body>
+  <header>
+    <strong>🗣️ Kitchen</strong>
+    <input id="prompt" placeholder='e.g. "set a 1 minute timer for the eggs"' />
+    <button onclick="sendPrompt()">Send</button>
+  </header>
+  <div id="say"></div>
+  <div id="threads"></div>
+
+<script>
+/*
+ * Browser device renderer (WebView stand-in). Run `npm run gateway`, serve this file
+ * (e.g. `npx serve src/device/web`), and open it. It is the human-facing twin of
+ * headless-device.ts: it renders each relayed MCP App in a SANDBOXED iframe and bridges
+ * on-screen "soft buttons" + a scroll control into it (the Q5 hardware bridge).
+ */
+const GW = "ws://localhost:8787";
+const HOST = "intercom-host", APP = "intercom-app";
+const ws = new WebSocket(GW);
+const frames = new Map(); // threadId -> { iframe, win }
+
+ws.onopen = () => ws.send(JSON.stringify({ t: "hello", deviceId: "kitchen-web", room: "Kitchen" }));
+ws.onmessage = (e) => handle(JSON.parse(e.data));
+
+function sendPrompt() {
+  const el = document.getElementById("prompt");
+  if (el.value.trim()) { ws.send(JSON.stringify({ t: "prompt", text: el.value.trim() })); el.value = ""; }
+}
+document.getElementById("prompt").addEventListener("keydown", (e) => { if (e.key === "Enter") sendPrompt(); });
+
+function handle(m) {
+  if (m.t === "say") document.getElementById("say").textContent = "🔊 " + m.text;
+  if (m.t === "thread.created") createThread(m.threadId, m.prompt);
+  if (m.t === "app.render") renderApp(m.threadId, m.html, m.state);
+  if (m.t === "app.tick") post(m.threadId, "tick", { remainingMs: m.remainingMs });
+  if (m.t === "app.state") post(m.threadId, "state", m.state);
+}
+
+function createThread(threadId, prompt) {
+  const el = document.createElement("div");
+  el.className = "thread"; el.id = "thread-" + threadId;
+  el.innerHTML = `<div class="prompt">“${prompt}”</div>
+    <iframe sandbox="allow-scripts"></iframe>
+    <div class="softbtns" id="btns-${threadId}"></div>
+    <div class="wheel">scroll wheel:
+      <button onclick="wheel('${threadId}',-1)">▲</button>
+      <button onclick="wheel('${threadId}',1)">▼</button></div>`;
+  document.getElementById("threads").prepend(el);
+}
+
+function renderApp(threadId, html, state) {
+  const iframe = document.querySelector(`#thread-${threadId} iframe`);
+  iframe.srcdoc = html;
+  iframe.onload = () => {
+    frames.set(threadId, { iframe, win: iframe.contentWindow });
+    post(threadId, "init", { threadId, state });
+  };
+}
+
+function post(threadId, type, payload) {
+  const f = frames.get(threadId);
+  if (f) f.win.postMessage({ source: HOST, type, payload }, "*");
+}
+
+// Inject hardware events into the focused app (the Q5 bridge).
+function pressSoft(threadId, label) { post(threadId, "hw", { control: "softbutton", id: label }); }
+function wheel(threadId, delta) { post(threadId, "hw", { control: "scroll", delta }); }
+
+// Messages coming OUT of an app iframe.
+window.addEventListener("message", (e) => {
+  const m = e.data || {};
+  if (m.source !== APP) return;
+  const threadId = findThread(e.source);
+  if (m.type === "softButtons") paintSoftButtons(threadId, m.payload.labels);
+  if (m.type === "callTool") ws.send(JSON.stringify({ t: "appEvent", threadId, tool: m.payload.tool, args: m.payload.args }));
+  if (m.type === "notify") document.getElementById("say").textContent = "↕ " + m.payload.text;
+});
+
+function findThread(win) { for (const [id, f] of frames) if (f.win === win) return id; }
+function paintSoftButtons(threadId, labels) {
+  const host = document.getElementById("btns-" + threadId);
+  if (!host) return;
+  host.innerHTML = "";
+  for (const label of labels) {
+    const b = document.createElement("button");
+    b.textContent = label; b.onclick = () => pressSoft(threadId, label);
+    host.appendChild(b);
+  }
+}
+</script>
+</body>
+</html>
